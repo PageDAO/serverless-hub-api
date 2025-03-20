@@ -1,0 +1,12 @@
+{
+  "name": "PageDAO API",
+  "version": "1.0.0",
+  "description": "API services for PageDAO Hub",
+  "endpoints": [
+    {
+      "path": "/api/network-comparison",
+      "method": "GET",
+      "description": "Returns PAGE token prices, TVL, and arbitrage opportunities across all supported networks"
+    }
+  ]
+}
