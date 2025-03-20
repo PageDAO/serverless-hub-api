@@ -1,0 +1,31 @@
+{
+    "name": "pagedao-api",
+    "version": "1.0.0",
+    "description": "API services for PageDAO Hub",
+    "main": "index.js",
+    "scripts": {
+      "dev": "netlify dev",
+      "build": "netlify build"
+    },
+    "dependencies": {
+      "@pagedao/core": "latest"
+    },
+    "devDependencies": {
+      "netlify-cli": "^15.0.0"
+    },
+    "engines": {
+      "node": ">=16.0.0"
+    },
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/pagedao/pagedao-api.git"
+    },
+    "keywords": [
+      "pagedao",
+      "blockchain",
+      "api"
+    ],
+    "author": "PageDAO",
+    "license": "MIT"
+  }
+  

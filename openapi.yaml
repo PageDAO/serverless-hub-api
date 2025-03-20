@@ -1,0 +1,40 @@
+const { RateLimiterMemory } = require('rate-limiter-flexible');
+
+// Create a rate limiter: 60 requests per minute
+const rateLimiter = new RateLimiterMemory({
+  points: 60, // Number of points
+  duration: 60, // Per 60 seconds
+});
+
+/**
+ * Rate limiting middleware for Netlify Functions
+ * @param {Object} event - Netlify Function event
+ * @returns {Object|null} - Rate limit error response or null if not rate limited
+ */
+async function rateLimitCheck(event) {
+  try {
+    // Get client IP
+    const clientIP = event.headers['client-ip'] || 
+                    event.headers['x-forwarded-for'] || 
+                    'unknown';
+    
+    // Check rate limit
+    await rateLimiter.consume(clientIP);
+    return null; // Not rate limited
+  } catch (error) {
+    // Rate limit exceeded
+    return {
+      statusCode: 429,
+      headers: {
+        'Content-Type': 'application/json',
+        'Retry-After': Math.ceil(error.msBeforeNext / 1000) || 60
+      },
+      body: JSON.stringify({
+        error: 'Too Many Requests',
+        message: 'Rate limit exceeded. Please try again later.'
+      })
+    };
+  }
+}
+
+module.exports = { rateLimitCheck };
