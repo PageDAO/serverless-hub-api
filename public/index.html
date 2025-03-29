@@ -1,42 +1,130 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>PageDAO API</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PageDAO Hub API</title>
   <style>
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: system-ui, -apple-system, sans-serif;
       line-height: 1.6;
-      color: #333;
-      max-width: 650px;
+      max-width: 800px;
       margin: 0 auto;
-      padding: 2rem;
+      padding: 20px;
     }
     h1 {
-      color: #2f3640;
-    }
-    code {
-      background-color: #f1f2f6;
-      padding: 0.2rem 0.4rem;
-      border-radius: 3px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 10px;
     }
     .endpoint {
-      background-color: #f8f9fa;
-      border-left: 4px solid #3742fa;
-      padding: 1rem;
-      margin: 1rem 0;
+      background: #f5f5f5;
+      border-radius: 4px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+    .endpoint h3 {
+      margin-top: 0;
+    }
+    code {
+      background: #e0e0e0;
+      padding: 2px 5px;
+      border-radius: 3px;
+    }
+    button {
+      background: #0070f3;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #0060df;
+    }
+    #results {
+      background: #f0f0f0;
+      padding: 15px;
+      border-radius: 4px;
+      overflow: auto;
+      max-height: 400px;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
-  <h1>PageDAO API</h1>
-  <p>This is the API service for PageDAO Hub. The API endpoints are available at the following URLs:</p>
+  <h1>PageDAO Hub API</h1>
+  <p>This page demonstrates the PageDAO Hub API endpoints. Click the buttons to test each endpoint.</p>
   
   <div class="endpoint">
-    <h3>Network Comparison</h3>
-    <p><code>GET /api/network-comparison</code></p>
-    <p>Returns PAGE token prices, TVL, and arbitrage opportunities across all supported networks.</p>
+    <h3>Books Endpoints</h3>
+    <div>
+      <code>GET /api/books</code>
+      <button onclick="testEndpoint('/api/books')">Test</button>
+    </div>
+    <div>
+      <code>GET /api/books/featured</code>
+      <button onclick="testEndpoint('/api/books/featured')">Test</button>
+    </div>
   </div>
   
-  <p>For more information, please visit the <a href="https://github.com/PageDAO/serverless-hub-api">GitHub repository</a>.</p>
+  <div class="endpoint">
+    <h3>Collections Endpoints</h3>
+    <div>
+      <code>GET /api/collections</code>
+      <button onclick="testEndpoint('/api/collections')">Test</button>
+    </div>
+  </div>
+  
+  <div class="endpoint">
+    <h3>Authors Endpoints</h3>
+    <div>
+      <code>GET /api/authors</code>
+      <button onclick="testEndpoint('/api/authors')">Test</button>
+    </div>
+  </div>
+  
+  <div class="endpoint">
+    <h3>Metrics Endpoints</h3>
+    <div>
+      <code>GET /api/metrics/token-prices</code>
+      <button onclick="testEndpoint('/api/metrics/token-prices')">Test</button>
+    </div>
+    <div>
+      <code>GET /api/metrics/network-comparison</code>
+      <button onclick="testEndpoint('/api/metrics/network-comparison')">Test</button>
+    </div>
+    <div>
+      <code>GET /api/metrics/tvl</code>
+      <button onclick="testEndpoint('/api/metrics/tvl')">Test</button>
+    </div>
+  </div>
+  
+  <div id="results">
+    <p>Results will appear here...</p>
+  </div>
+  
+  <script>
+    async function testEndpoint(url) {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '<p>Loading...</p>';
+      
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        // Format the JSON with syntax highlighting
+        resultsDiv.innerHTML = `
+          <h4>Response from ${url}</h4>
+          <pre>${JSON.stringify(data, null, 2)}</pre>
+        `;
+      } catch (error) {
+        resultsDiv.innerHTML = `
+          <h4>Error from ${url}</h4>
+          <pre>${error.message}</pre>
+        `;
+      }
+    }
+  </script>
 </body>
 </html>

@@ -1,14 +1,32 @@
 [build]
-  command = "npm install"
   functions = "functions"
   publish = "public"
-
-[dev]
-  functions = "functions"
-  publish = "public"
-  port = 8888
 
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
+  force = true
+
+[functions]
+  node_bundler = "esbuild"
+  included_files = ["node_modules/@pagedao/core/**"]
+
+[functions.books]
+  included_files = ["node_modules/@pagedao/core/**"]
+
+[functions.collections]
+  included_files = ["node_modules/@pagedao/core/**"]
+
+[functions.authors]
+  included_files = ["node_modules/@pagedao/core/**"]
+
+[functions.metrics]
+  included_files = ["node_modules/@pagedao/core/**"]
+
+[functions.frame-webhooks]
+  included_files = ["node_modules/@pagedao/core/**"]
+
+[dev]
+  port = 8888
+  publish = "public"
