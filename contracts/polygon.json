@@ -1,0 +1,13 @@
+[
+    {
+      "address": "0x931204fb8cea7f7068995dce924f0d76d571df99",
+      "name": "Readme Books Collection",
+      "type": "readme_book",
+      "contentType": "readme",
+      "creator": "PageDAO",
+      "description": "ERC1155 collection of readmes on Polygon",
+      "image": "https://i.imgur.com/XrEsQpK.png",
+      "url": "https://mint.nftbookbazaar.com",
+      "featured": true
+    }
+  ]
