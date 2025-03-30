@@ -1,11 +1,15 @@
+// functions/books/index.js
 const { rateLimitCheck } = require('../utils/rateLimiter');
 const { createResponse } = require('../utils/responseFormatter');
 const { handleError } = require('../utils/errorHandler');
 const { isFrameRequest, optimizeForFrame } = require('../utils/frameDetection');
-const { ContentTrackerFactory } = require('@pagedao/core');
+const { initializeContentAdapters, ContentTrackerFactory } = require('@pagedao/core');
 
 exports.handler = async function(event) {
   try {
+    // Initialize content adapters
+    initializeContentAdapters();
+    
     // Check rate limiting
     const rateLimitResponse = await rateLimitCheck(event);
     if (rateLimitResponse) return rateLimitResponse;
@@ -21,22 +25,60 @@ exports.handler = async function(event) {
     // Set default values for pagination
     const limit = parseInt(queryParams.limit) || 20;
     const offset = parseInt(queryParams.offset) || 0;
-    const chain = queryParams.chain || 'all';
     
     let response;
     
     // Route based on path
     if (!segment) {
-      // GET /books
-      const books = await getBooksList(chain, limit, offset);
+      // GET /books - Requires addresses parameter
+      if (!queryParams.addresses) {
+        throw { code: 'MISSING_PARAM', message: 'Book addresses are required' };
+      }
+      
+      const addresses = queryParams.addresses.split(',');
+      const chains = queryParams.chains ? queryParams.chains.split(',') : [];
+      
+      // Map addresses to chains
+      const chainsByAddress = {};
+      addresses.forEach((addr, index) => {
+        chainsByAddress[addr] = chains[index] || chains[0] || 'ethereum';
+      });
+      
+      const books = await getBooksList(addresses, chainsByAddress, limit, offset);
       response = createResponse(books, 200, {}, isFrame);
     } else if (segment === 'featured') {
-      // GET /books/featured
-      const featuredBooks = await getFeaturedBooks(chain, limit);
+      // GET /books/featured - Requires featuredAddresses parameter
+      if (!queryParams.featuredAddresses) {
+        throw { code: 'MISSING_PARAM', message: 'Featured book addresses are required' };
+      }
+      
+      const addresses = queryParams.featuredAddresses.split(',');
+      const chains = queryParams.chains ? queryParams.chains.split(',') : [];
+      
+      // Map addresses to chains
+      const chainsByAddress = {};
+      addresses.forEach((addr, index) => {
+        chainsByAddress[addr] = chains[index] || chains[0] || 'ethereum';
+      });
+      
+      const featuredBooks = await getFeaturedBooks(addresses, chainsByAddress, limit);
       response = createResponse(featuredBooks, 200, {}, isFrame);
     } else {
-      // GET /books/:id
-      const book = await getBookDetails(segment);
+      // GET /books/:id - Format: chainName:address or just address with chain in query
+      let bookAddress, chain;
+      
+      if (segment.includes(':')) {
+        [chain, bookAddress] = segment.split(':');
+      } else {
+        bookAddress = segment;
+        chain = queryParams.chain;
+        
+        if (!chain) {
+          throw { code: 'MISSING_PARAM', message: 'Chain parameter is required' };
+        }
+      }
+      
+      const book = await getBookDetails(bookAddress, chain);
       if (!book) {
         throw { code: 'NOT_FOUND', message: 'Book not found' };
       }
@@ -52,49 +94,53 @@ exports.handler = async function(event) {
 
 /**
  * Get a list of books
- * @param {string} chain - Blockchain to filter by, or 'all'
+ * @param {string[]} addresses - Book contract addresses
+ * @param {Object} chainsByAddress - Map of address to chain
  * @param {number} limit - Number of books to return
  * @param {number} offset - Pagination offset
  */
-async function getBooksList(chain, limit, offset) {
+async function getBooksList(addresses, chainsByAddress, limit, offset) {
   try {
-    // Get all registered content types
-    const contentTypes = ContentTrackerFactory.getRegisteredTypes();
-    
-    // Supported chains
-    const supportedChains = ['base', 'ethereum', 'optimism', 'zora', 'polygon'];
+    console.log(`Fetching books for ${addresses.length} addresses`);
     
     // Array to collect all books
     const allBooks = [];
     
-    // Loop through chains and content types
-    for (const chain of supportedChains) {
-      for (const contentType of contentTypes) {
+    // Process each book address
+    for (const address of addresses) {
+      try {
+        const chain = chainsByAddress[address];
+        console.log(`Processing book ${address} on ${chain}`);
+        
+        // Try to get book details
         try {
-          // Try to get a tracker for each chain and content type
-          // You'll need to have environment variables or configuration for contract addresses
-          const contractAddress = process.env[`${chain.toUpperCase()}_${contentType.toUpperCase()}_CONTRACT`] || '';
-          if (!contractAddress) continue;
-          
-          const tracker = ContentTrackerFactory.getTracker(contractAddress, contentType, chain);
-          
-          // Get books using the tracker
-          const books = await tracker.fetchMetadata();
-          allBooks.push(...books);
+          const book = await getBookDetails(address, chain);
+          if (book) {
+            allBooks.push(book);
+          }
         } catch (error) {
-          console.warn(`Error getting books for ${chain}/${contentType}: ${error.message}`);
+          console.warn(`Error fetching book ${address}: ${error.message}`);
+          // Add minimal info for failed books
+          allBooks.push({
+            address,
+            chain,
+            error: error.message,
+            _fetchFailed: true
+          });
         }
+      } catch (error) {
+        console.error(`Error processing book address ${address}:`, error.message);
       }
     }
     
-    // Sort all books by some criteria (e.g. date, popularity)
-    allBooks.sort((a, b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0));
+    // Sort books by title
+    allBooks.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
     
-    // Apply final pagination if needed
+    // Apply pagination
     return {
-      items: allBooks.slice(0, limit),
+      items: allBooks.slice(offset, offset + limit),
       pagination: {
-        total: allBooks.length, // This would be the total count from all sources
+        total: allBooks.length,
         limit,
         offset,
         hasMore: allBooks.length > offset + limit
@@ -108,69 +154,79 @@ async function getBooksList(chain, limit, offset) {
 
 /**
  * Get detailed information about a specific book
- * @param {string} bookId - The book ID
+ * @param {string} address - The book contract address
+ * @param {string} chain - The blockchain chain
  */
-async function getBookDetails(bookId) {
+async function getBookDetails(address, chain) {
   try {
-    // Parse the book ID to get chain and local ID if needed
-    // Format could be chain:localId or just localId
-    let chain, localId;
+    console.log(`Fetching book details for ${address} on ${chain}`);
     
-    if (bookId.includes(':')) {
-      [chain, localId] = bookId.split(':');
-    } else {
-      localId = bookId;
-      // You'd need logic to determine which chain this book belongs to
-      // For now we'll try to find it across all chains
-    }
+    // Try each applicable book content type
+    const bookContentTypes = ['book', 'alexandria_book'];
     
-    const factory = new ContentTrackerFactory();
-    
-    if (chain) {
-      // If chain is specified, only look there
-      const adapter = await factory.getContentTrackerForChain(chain);
-      if (!adapter) {
-        throw { code: 'INVALID_PARAM', message: `Invalid chain: ${chain}` };
-      }
-      return await adapter.getById(localId);
-    } else {
-      // Search across all chains
-      const adapters = await factory.getAllContentTrackers();
-      
-      for (const adapter of adapters) {
-        try {
-          const book = await adapter.getById(localId);
-          if (book) return book;
-        } catch (e) {
-          // Continue to next adapter if not found
+    for (const type of bookContentTypes) {
+      try {
+        const tracker = ContentTrackerFactory.getTracker(address, type, chain);
+        // Get collection info to verify it works
+        const collectionInfo = await tracker.getCollectionInfo();
+        
+        // This is probably a book, get the first item's metadata
+        const tokenIds = await tracker.getAllTokens({ maxTokens: 1 });
+        if (tokenIds.length === 0) {
+          console.log(`No tokens found for book ${address}`);
+          return {
+            ...collectionInfo,
+            address,
+            chain,
+            type
+          };
         }
+        
+        const metadata = await tracker.fetchMetadata(tokenIds[0]);
+        
+        // Combine collection info with token metadata
+        return {
+          ...collectionInfo,
+          ...metadata,
+          address,
+          chain,
+          type,
+          tokenId: tokenIds[0]
+        };
+      } catch (error) {
+        console.warn(`Failed with type ${type}: ${error.message}`);
       }
     }
     
-    // If we get here, the book wasn't found
+    // If we get here, we couldn't find a valid book
+    console.log(`No valid book found at ${address} on ${chain}`);
     return null;
   } catch (error) {
-    console.error('Error fetching book details:', error);
+    console.error(`Error fetching book details for ${address}:`, error);
     throw error;
   }
 }
 
 /**
  * Get featured books
- * @param {string} chain - Blockchain to filter by, or 'all'
+ * @param {string[]} addresses - Featured book addresses
+ * @param {Object} chainsByAddress - Map of address to chain
  * @param {number} limit - Number of books to return
  */
-async function getFeaturedBooks(chain, limit) {
-  // This would typically use some criteria to determine featured books
-  // For now, we'll just return the most recent books
-  const books = await getBooksList(chain, limit, 0);
-  
-  // You might add additional metadata to indicate why they're featured
-  books.items = books.items.map(book => ({
-    ...book,
-    featured: true,
-    featuredReason: 'Recently published'
-  }));
-  
-  return books;
+async function getFeaturedBooks(addresses, chainsByAddress, limit) {
+  try {
+    // Get books list with the provided addresses
+    const books = await getBooksList(addresses, chainsByAddress, limit, 0);
+    
+    // Mark books as featured
+    books.items = books.items.map(book => ({
+      ...book,
+      featured: true
+    }));
+    
+    return books;
+  } catch (error) {
+    console.error('Error fetching featured books:', error);
+    throw error;
+  }
 }

@@ -2,10 +2,13 @@ const { rateLimitCheck } = require('../utils/rateLimiter');
 const { createResponse } = require('../utils/responseFormatter');
 const { handleError } = require('../utils/errorHandler');
 const { isFrameRequest, optimizeForFrame } = require('../utils/frameDetection');
-const { ContentTrackerFactory } = require('@pagedao/core');
+const { initializeContentAdapters, ContentTrackerFactory } = require('@pagedao/core');
 
 exports.handler = async function(event) {
   try {
+    // Initialize content adapters
+    initializeContentAdapters();
+    
     // Check rate limiting
     const rateLimitResponse = await rateLimitCheck(event);
     if (rateLimitResponse) return rateLimitResponse;

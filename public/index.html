@@ -50,21 +50,116 @@
       max-height: 400px;
       margin-top: 20px;
     }
+    input {
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .param-group {
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+    .param-label {
+      font-size: 0.9em;
+      font-weight: bold;
+    }
+    .tooltip {
+      position: relative;
+      display: inline-block;
+      cursor: help;
+      border-bottom: 1px dotted #999;
+    }
+    .tooltip .tooltiptext {
+      visibility: hidden;
+      width: 280px;
+      background-color: #555;
+      color: #fff;
+      text-align: left;
+      border-radius: 6px;
+      padding: 10px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      margin-left: -140px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      font-size: 0.9em;
+      line-height: 1.4;
+    }
+    .tooltip:hover .tooltiptext {
+      visibility: visible;
+      opacity: 1;
+    }
+    .collapsible {
+      cursor: pointer;
+      padding: 5px;
+      background-color: #e0e0e0;
+      border-radius: 4px;
+      display: inline-block;
+      margin-bottom: 5px;
+    }
+    .collapse-content {
+      display: none;
+      padding: 10px;
+      background-color: #f8f8f8;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
   <h1>PageDAO Hub API</h1>
-  <p>This page demonstrates the PageDAO Hub API endpoints. Click the buttons to test each endpoint.</p>
+  <p>This page demonstrates the PageDAO Hub API endpoints with the new contract-based architecture.</p>
+  <p><strong>Note:</strong> Most endpoints now require explicit contract addresses and chains.</p>
   
   <div class="endpoint">
     <h3>Books Endpoints</h3>
     <div>
       <code>GET /api/books</code>
-      <button onclick="testEndpoint('/api/books')">Test</button>
+      <div class="param-group">
+        <div class="param-label">Book Addresses <span class="tooltip">ⓘ<span class="tooltiptext">Comma-separated list of contract addresses for books you want to fetch.</span></span></div>
+        <input type="text" id="book-addresses" value="0x4F9e2e5e07B0Bfb7Ba4b5902A7F61a41Bd24C0b0,0xf5C424C8c5502135ea9A22bEc42Bb98Fe93A64d9" placeholder="e.g., 0x123,0x456">
+        <div class="param-label">Chains <span class="tooltip">ⓘ<span class="tooltiptext">Comma-separated list of chains in the same order as addresses. If fewer chains than addresses are provided, the first chain will be used for remaining addresses.</span></span></div>
+        <input type="text" id="book-chains" value="base,ethereum" placeholder="e.g., base,ethereum">
+        <div class="param-label">Limit</div>
+        <input type="number" id="book-limit" value="12" min="1" max="100">
+      </div>
+      <button onclick="testEndpoint('/api/books', {
+        addresses: document.getElementById('book-addresses').value,
+        chains: document.getElementById('book-chains').value,
+        limit: document.getElementById('book-limit').value
+      })">Test</button>
     </div>
     <div>
       <code>GET /api/books/featured</code>
-      <button onclick="testEndpoint('/api/books/featured')">Test</button>
+      <div class="param-group">
+        <div class="param-label">Featured Book Addresses <span class="tooltip">ⓘ<span class="tooltiptext">Comma-separated list of contract addresses for featured books.</span></span></div>
+        <input type="text" id="featured-book-addresses" value="0x4F9e2e5e07B0Bfb7Ba4b5902A7F61a41Bd24C0b0,0xf5C424C8c5502135ea9A22bEc42Bb98Fe93A64d9" placeholder="e.g., 0x123,0x456">
+        <div class="param-label">Chains</div>
+        <input type="text" id="featured-book-chains" value="base,ethereum" placeholder="e.g., base,ethereum">
+        <div class="param-label">Limit</div>
+        <input type="number" id="featured-book-limit" value="4" min="1" max="100">
+      </div>
+      <button onclick="testEndpoint('/api/books/featured', {
+        addresses: document.getElementById('featured-book-addresses').value,
+        chains: document.getElementById('featured-book-chains').value,
+        limit: document.getElementById('featured-book-limit').value
+      })">Test</button>
+    </div>
+    <div>
+      <code>GET /api/books/{address}</code>
+      <div class="param-group">
+        <div class="param-label">Book Address</div>
+        <input type="text" id="single-book-address" value="0x4F9e2e5e07B0Bfb7Ba4b5902A7F61a41Bd24C0b0" placeholder="e.g., 0x123">
+        <div class="param-label">Chain</div>
+        <input type="text" id="single-book-chain" value="base" placeholder="e.g., base">
+      </div>
+      <button onclick="testEndpoint(`/api/books/${document.getElementById('single-book-address').value}`, {
+        chain: document.getElementById('single-book-chain').value
+      })">Test</button>
     </div>
   </div>
   
@@ -72,7 +167,55 @@
     <h3>Collections Endpoints</h3>
     <div>
       <code>GET /api/collections</code>
-      <button onclick="testEndpoint('/api/collections')">Test</button>
+      <div class="param-group">
+        <div class="param-label">Collection Addresses <span class="tooltip">ⓘ<span class="tooltiptext">Comma-separated list of contract addresses.</span></span></div>
+        <input type="text" id="collection-addresses" value="0x4F9e2e5e07B0Bfb7Ba4b5902A7F61a41Bd24C0b0,0xf5C424C8c5502135ea9A22bEc42Bb98Fe93A64d9" placeholder="e.g., 0x123,0x456">
+        <div class="param-label">Chains</div>
+        <input type="text" id="collection-chains" value="base,ethereum" placeholder="e.g., base,ethereum">
+        <div class="param-label">Types (optional)</div>
+        <input type="text" id="collection-types" value="alexandria_book,book" placeholder="e.g., book,nft">
+        <div class="param-label">Limit</div>
+        <input type="number" id="collection-limit" value="20" min="1" max="100">
+      </div>
+      <button onclick="testEndpoint('/api/collections', {
+        addresses: document.getElementById('collection-addresses').value,
+        chains: document.getElementById('collection-chains').value,
+        types: document.getElementById('collection-types').value,
+        limit: document.getElementById('collection-limit').value
+      })">Test</button>
+    </div>
+    <div>
+      <code>GET /api/collections/{address}</code>
+      <div class="param-group">
+        <div class="param-label">Collection Address</div>
+        <input type="text" id="single-collection-address" value="0x4F9e2e5e07B0Bfb7Ba4b5902A7F61a41Bd24C0b0" placeholder="e.g., 0x123">
+        <div class="param-label">Chain</div>
+        <input type="text" id="single-collection-chain" value="base" placeholder="e.g., base">
+        <div class="param-label">Type (optional)</div>
+        <input type="text" id="single-collection-type" value="alexandria_book" placeholder="e.g., book">
+      </div>
+      <button onclick="testEndpoint(`/api/collections/${document.getElementById('single-collection-address').value}`, {
+        chain: document.getElementById('single-collection-chain').value,
+        type: document.getElementById('single-collection-type').value
+      })">Test</button>
+    </div>
+    <div>
+      <code>GET /api/collections/{address}/items</code>
+      <div class="param-group">
+        <div class="param-label">Collection Address</div>
+        <input type="text" id="collection-items-address" value="0x4F9e2e5e07B0Bfb7Ba4b5902A7F61a41Bd24C0b0" placeholder="e.g., 0x123">
+        <div class="param-label">Chain</div>
+        <input type="text" id="collection-items-chain" value="base" placeholder="e.g., base">
+        <div class="param-label">Type (optional)</div>
+        <input type="text" id="collection-items-type" value="alexandria_book" placeholder="e.g., book">
+        <div class="param-label">Limit</div>
+        <input type="number" id="collection-items-limit" value="20" min="1" max="100">
+      </div>
+      <button onclick="testEndpoint(`/api/collections/${document.getElementById('collection-items-address').value}/items`, {
+        chain: document.getElementById('collection-items-chain').value,
+        type: document.getElementById('collection-items-type').value,
+        limit: document.getElementById('collection-items-limit').value
+      })">Test</button>
     </div>
   </div>
   
@@ -81,6 +224,26 @@
     <div>
       <code>GET /api/authors</code>
       <button onclick="testEndpoint('/api/authors')">Test</button>
+    </div>
+    <div>
+      <code>GET /api/authors/{id}</code>
+      <div class="param-group">
+        <div class="param-label">Author ID/Address</div>
+        <input type="text" id="author-id" value="0x1234567890123456789012345678901234567890" placeholder="e.g., 0x123...">
+      </div>
+      <button onclick="testEndpoint(`/api/authors/${document.getElementById('author-id').value}`)">Test</button>
+    </div>
+    <div>
+      <code>GET /api/authors/{id}/publications</code>
+      <div class="param-group">
+        <div class="param-label">Author ID/Address</div>
+        <input type="text" id="author-publications-id" value="0x1234567890123456789012345678901234567890" placeholder="e.g., 0x123...">
+        <div class="param-label">Limit</div>
+        <input type="number" id="author-publications-limit" value="20" min="1" max="100">
+      </div>
+      <button onclick="testEndpoint(`/api/authors/${document.getElementById('author-publications-id').value}/publications`, {
+        limit: document.getElementById('author-publications-limit').value
+      })">Test</button>
     </div>
   </div>
   
@@ -98,6 +261,91 @@
       <code>GET /api/metrics/tvl</code>
       <button onclick="testEndpoint('/api/metrics/tvl')">Test</button>
     </div>
+    <div>
+      <code>GET /api/metrics/historical-data</code>
+      <div class="param-group">
+        <div class="param-label">Chain</div>
+        <select id="historical-chain">
+          <option value="all">all</option>
+          <option value="ethereum">ethereum</option>
+          <option value="base">base</option>
+          <option value="optimism">optimism</option>
+          <option value="osmosis">osmosis</option>
+        </select>
+        <div class="param-label">Period</div>
+        <select id="historical-period">
+          <option value="24h">24h</option>
+          <option value="7d">7d</option>
+          <option value="30d">30d</option>
+        </select>
+      </div>
+      <button onclick="testEndpoint('/api/metrics/historical-data', {
+        chain: document.getElementById('historical-chain').value,
+        period: document.getElementById('historical-period').value
+      })">Test</button>
+    </div>
+  </div>
+  
+  <div class="endpoint">
+    <h3>Blockchain Data Endpoints</h3>
+    <div>
+      <code>GET /api/blockchain/{chain}/{address}/{method}</code>
+      <div class="param-group">
+        <div class="param-label">Chain</div>
+        <select id="blockchain-chain">
+          <option value="ethereum">ethereum</option>
+          <option value="base">base</option>
+          <option value="optimism">optimism</option>
+          <option value="polygon">polygon</option>
+          <option value="zora">zora</option>
+        </select>
+        <div class="param-label">Address</div>
+        <input type="text" id="blockchain-address" value="0x4F9e2e5e07B0Bfb7Ba4b5902A7F61a41Bd24C0b0" placeholder="Contract address">
+        <div class="param-label">Method</div>
+        <select id="blockchain-method">
+          <option value="info">info</option>
+          <option value="metadata">metadata</option>
+          <option value="tokens">tokens</option>
+          <option value="ownership">ownership</option>
+          <option value="rights">rights</option>
+          <option value="ownerTokens">ownerTokens</option>
+        </select>
+        <div class="param-label">Parameters (comma-separated)</div>
+        <input type="text" id="blockchain-params" placeholder="e.g., 1 for tokenId">
+        <div class="param-label">Content Type (optional)</div>
+        <input type="text" id="blockchain-type" value="alexandria_book" placeholder="e.g., book">
+      </div>
+      <button onclick="testBlockchainEndpoint()">Test</button>
+    </div>
+  </div>
+  
+  <div class="endpoint">
+    <h3>Sample Contract Addresses</h3>
+    <div class="collapsible" onclick="toggleSampleAddresses()">Click to show/hide sample addresses</div>
+    <div id="sample-addresses" class="collapse-content">
+      <p><strong>Base Chain:</strong></p>
+      <ul>
+        <li><code>0x4F9e2e5e07B0Bfb7Ba4b5902A7F61a41Bd24C0b0</code> - Alexandria Book</li>
+        <li><code>0xa1b2c3d4e5f67890a1b2c3d4e5f67890</code> - Sample Base Publication</li>
+      </ul>
+      <p><strong>Ethereum:</strong></p>
+      <ul>
+        <li><code>0xf5C424C8c5502135ea9A22bEc42Bb98Fe93A64d9</code> - Ethereum Book</li>
+        <li><code>0x1234567890abcdef1234567890abcdef</code> - Sample ETH Publication</li>
+      </ul>
+      <p><strong>Optimism:</strong></p>
+      <ul>
+        <li><code>0xa1b2c3d4e5f67890a1b2c3d4e5f67890</code> - Sample Optimism Book</li>
+      </ul>
+      <p><strong>Polygon:</strong></p>
+      <ul>
+        <li><code>0x1234567890abcdef1234567890abcdef</code> - Sample Polygon Book</li>
+      </ul>
+      <p><strong>Zora:</strong></p>
+      <ul>
+        <li><code>0xabcdef1234567890abcdef1234567890</code> - Sample Zora NFT</li>
+      </ul>
+    </div>
   </div>
   
   <div id="results">
@@ -105,11 +353,22 @@
   </div>
   
   <script>
-    async function testEndpoint(url) {
+    async function testEndpoint(url, params = {}) {
       const resultsDiv = document.getElementById('results');
       resultsDiv.innerHTML = '<p>Loading...</p>';
       
       try {
+        // Add query parameters if provided
+        if (Object.keys(params).length > 0) {
+          const queryString = Object.entries(params)
+            .filter(([_, value]) => value) // Remove empty values
+            .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+            .join('&');
+          
+          url = `${url}?${queryString}`;
+        }
+        
+        console.log(`Calling API: ${url}`);
         const response = await fetch(url);
         const data = await response.json();
         
@@ -125,6 +384,42 @@
         `;
       }
     }
+    
+    function testBlockchainEndpoint() {
+      const chain = document.getElementById('blockchain-chain').value;
+      const address = document.getElementById('blockchain-address').value;
+      const method = document.getElementById('blockchain-method').value;
+      const params = document.getElementById('blockchain-params').value;
+      const type = document.getElementById('blockchain-type').value;
+      
+      let url = `/api/blockchain/${chain}/${address}/${method}`;
+      
+      // Add params to URL if provided
+      if (params) {
+        const paramSegments = params.split(',');
+        url += `/${paramSegments.join('/')}`;
+      }
+      
+      // Call the API with type as a query parameter
+      testEndpoint(url, { type });
+    }
+    
+    function toggleSampleAddresses() {
+      const content = document.getElementById('sample-addresses');
+      if (content.style.display === 'block') {
+        content.style.display = 'none';
+      } else {
+        content.style.display = 'block';
+      }
+    }
+    
+    // When the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      // Explain how to use the page
+      console.log("PageDAO Hub API Test Page");
+      console.log("Fill in the parameters and click Test to call the API.");
+      console.log("Sample addresses are provided for testing.");
+    });
   </script>
 </body>
 </html>

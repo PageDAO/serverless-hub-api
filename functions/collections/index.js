@@ -2,11 +2,13 @@ const { rateLimitCheck } = require('../utils/rateLimiter');
 const { createResponse } = require('../utils/responseFormatter');
 const { handleError } = require('../utils/errorHandler');
 const { isFrameRequest, optimizeForFrame } = require('../utils/frameDetection');
-const { ContentTrackerFactory } = require('@pagedao/core');
-const { getContracts } = require('../../contracts/registry');
+const { initializeContentAdapters, ContentTrackerFactory } = require('@pagedao/core');
 
 exports.handler = async function(event) {
   try {
+    // Initialize content adapters
+    initializeContentAdapters();
+    
     // Check rate limiting
     const rateLimitResponse = await rateLimitCheck(event);
     if (rateLimitResponse) return rateLimitResponse;
@@ -23,22 +25,59 @@ exports.handler = async function(event) {
     // Set default values for pagination and filtering
     const limit = parseInt(queryParams.limit) || 20;
     const offset = parseInt(queryParams.offset) || 0;
-    const chain = queryParams.chain || 'all';
     
     let response;
     
     // Route based on path
     if (!collectionAddress) {
-      // GET /collections
-      const collections = await getCollectionsList(chain, limit, offset);
+      // GET /collections - List collections from query params
+      if (!queryParams.addresses) {
+        throw { code: 'MISSING_PARAM', message: 'Collection addresses are required' };
+      }
+      
+      const addresses = queryParams.addresses.split(',');
+      const chainsByAddress = {};
+      
+      // Parse chains if provided
+      if (queryParams.chains) {
+        const chains = queryParams.chains.split(',');
+        addresses.forEach((addr, index) => {
+          chainsByAddress[addr] = chains[index] || chains[0] || 'ethereum';
+        });
+      } else {
+        // Default all to same chain
+        addresses.forEach(addr => {
+          chainsByAddress[addr] = queryParams.chain || 'ethereum';
+        });
+      }
+      
+      const types = queryParams.types ? queryParams.types.split(',') : [];
+      const typesByAddress = {};
+      if (types.length > 0) {
+        addresses.forEach((addr, index) => {
+          typesByAddress[addr] = types[index] || types[0] || '';
+        });
+      }
+      
+      const collections = await getCollectionsList(addresses, chainsByAddress, typesByAddress, limit, offset);
       response = createResponse(collections, 200, {}, isFrame);
     } else if (subResource === 'items') {
       // GET /collections/:address/items
-      const items = await getCollectionItems(collectionAddress, chain, limit, offset);
+      if (!queryParams.chain) {
+        throw { code: 'MISSING_PARAM', message: 'Chain parameter is required' };
+      }
+      
+      const contentType = queryParams.type || '';
+      const items = await getCollectionItems(collectionAddress, queryParams.chain, contentType, limit, offset);
       response = createResponse(items, 200, {}, isFrame);
     } else {
       // GET /collections/:address
-      const collection = await getCollectionDetails(collectionAddress, chain);
+      if (!queryParams.chain) {
+        throw { code: 'MISSING_PARAM', message: 'Chain parameter is required' };
+      }
+      
+      const contentType = queryParams.type || '';
+      const collection = await getCollectionDetails(collectionAddress, queryParams.chain, contentType);
       if (!collection) {
         throw { code: 'NOT_FOUND', message: 'Collection not found' };
       }
@@ -54,88 +93,53 @@ exports.handler = async function(event) {
 
 /**
  * Get a list of collections
- * @param {string} chain - Blockchain to filter by, or 'all'
+ * @param {string[]} addresses - Collection addresses
+ * @param {Object} chainsByAddress - Map of address to chain
+ * @param {Object} typesByAddress - Map of address to content type hint
  * @param {number} limit - Number of collections to return
  * @param {number} offset - Pagination offset
  */
-async function getCollectionsList(chain, limit, offset) {
+async function getCollectionsList(addresses, chainsByAddress, typesByAddress, limit, offset) {
   try {
-    console.log(`Fetching collections for chain: ${chain}`);
-    
-    const { ContentTrackerFactory } = require('@pagedao/core');
-    
-    // Get all registered content types
-    const contentTypes = ContentTrackerFactory.getRegisteredTypes();
-    console.log('Registered content types:', contentTypes);
-    
-    // Get contracts from registry
-    const registryContracts = getContracts(chain);
-    console.log(`Found ${registryContracts.length} contracts in registry for ${chain}`);
+    console.log(`Fetching collections for ${addresses.length} addresses`);
     
     // Array to collect all collections with metadata
     const allCollections = [];
     
-    // Loop through registry contracts
-    for (const contractInfo of registryContracts) {
+    // Process each address
+    for (const address of addresses) {
       try {
-        const { address, type, chain: contractChain } = contractInfo;
+        const chain = chainsByAddress[address];
+        const typeHint = typesByAddress[address] || '';
+        console.log(`Processing ${address} on ${chain} with type hint: ${typeHint}`);
         
-        // Skip if the content type isn't registered
-        if (!contentTypes.includes(type)) {
-          console.warn(`Content type ${type} not registered, skipping ${address}`);
-          continue;
-        }
-        
-        console.log(`Creating tracker for ${contractChain}/${type}/${address}`);
-        
-        // Get a tracker for this contract
-        const tracker = ContentTrackerFactory.getTracker(address, type, contractChain);
-        
-        // Get collection info from blockchain
+        // Try to get collection details
         try {
-          console.log(`Fetching collection info for ${address}`);
-          const onchainInfo = await tracker.getCollectionInfo();
-          
-          // Merge registry data with on-chain data
-          allCollections.push({
-            ...contractInfo,
-            ...onchainInfo,
-            // Ensure these are from registry even if onchain info has them
-            address: contractInfo.address,
-            type: contractInfo.type,
-            chain: contractChain
-          });
-          
-          console.log(`Successfully added collection ${address}`);
+          const collectionInfo = await getCollectionDetails(address, chain, typeHint);
+          if (collectionInfo) {
+            allCollections.push(collectionInfo);
+          }
         } catch (error) {
-          console.error(`Error fetching collection info for ${address}:`, error);
-          
-          // Add registry data even if blockchain data fetch failed
+          console.warn(`Error fetching collection ${address} on ${chain}: ${error.message}`);
+          // Add minimal info for failed collections
           allCollections.push({
-            ...contractInfo,
-            // Note that this is fallback data
-            _fromRegistry: true,
-            _blockchainFetchError: error.message
+            address,
+            chain,
+            error: error.message,
+            _fetchFailed: true
           });
         }
       } catch (error) {
-        console.error(`Error processing contract ${contractInfo.address}:`, error.message);
+        console.error(`Error processing address ${address}:`, error.message);
       }
     }
     
-    // Sort collections - featured first, then alphabetically
-    allCollections.sort((a, b) => {
-      // Sort featured collections first
-      if (a.featured && !b.featured) return -1;
-      if (!a.featured && b.featured) return 1;
-      
-      // Then sort alphabetically by name
-      return (a.name || '').localeCompare(b.name || '');
-    });
+    // Sort collections alphabetically by name
+    allCollections.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     
     console.log(`Returning ${allCollections.length} collections`);
     
-    // Apply final pagination
+    // Apply pagination
     return {
       items: allCollections.slice(offset, offset + limit),
       pagination: {
@@ -154,124 +158,120 @@ async function getCollectionsList(chain, limit, offset) {
 /**
  * Get detailed information about a specific collection
  * @param {string} address - The collection address
- * @param {string} chain - The blockchain to search on, or 'all'
+ * @param {string} chain - The blockchain chain
+ * @param {string} contentTypeHint - Optional content type hint
  */
-async function getCollectionDetails(address, chain) {
+async function getCollectionDetails(address, chain, contentTypeHint) {
   try {
-    console.log(`Fetching collection details for address: ${address}`);
+    console.log(`Fetching collection details for ${address} on ${chain}`);
     
-    // First check registry for this collection
-    const allContracts = getContracts('all');
-    const registryInfo = allContracts.find(contract => 
-      contract.address.toLowerCase() === address.toLowerCase()
-    );
+    // Check if ContentTrackerFactory has registered types
+    const registeredTypes = ContentTrackerFactory.getRegisteredTypes();
+    console.log(`Registered content types: ${JSON.stringify(registeredTypes)}`);
     
-    if (!registryInfo) {
-      console.log(`Collection ${address} not found in registry`);
-      // Not in registry, but we can still try to look it up on-chain if chain is specified
-      if (chain && chain !== 'all') {
-        return await fetchCollectionFromBlockchain(address, chain);
+    // Try to create a content tracker
+    let tracker;
+    let successful = false;
+    let usedType = '';
+    
+    // If content type is provided, try it first
+    if (contentTypeHint) {
+      try {
+        console.log(`Trying with provided type hint: ${contentTypeHint}`);
+        tracker = ContentTrackerFactory.getTracker(address, contentTypeHint, chain);
+        // Test if it works
+        await tracker.getCollectionInfo();
+        console.log(`Successfully created tracker using hint type: ${contentTypeHint}`);
+        successful = true;
+        usedType = contentTypeHint;
+      } catch (error) {
+        console.warn(`Failed with provided type ${contentTypeHint}: ${error.message}`);
       }
+    }
+    
+    // If not successful yet, try all registered types
+    if (!successful) {
+      for (const type of registeredTypes) {
+        try {
+          console.log(`Trying with content type: ${type}`);
+          tracker = ContentTrackerFactory.getTracker(address, type, chain);
+          // Test if it works by getting collection info
+          await tracker.getCollectionInfo();
+          console.log(`Successfully created tracker using type: ${type}`);
+          successful = true;
+          usedType = type;
+          break;
+        } catch (error) {
+          console.warn(`Failed with type ${type}: ${error.message}`);
+        }
+      }
+    }
+    
+    // If still not successful, try some hardcoded common types
+    if (!successful) {
+      const fallbackTypes = ['book', 'publication', 'nft', 'alexandria_book', 'mirror_publication', 'zora_nft'];
+      for (const type of fallbackTypes) {
+        if (!registeredTypes.includes(type)) {
+          try {
+            console.log(`Trying fallback type: ${type}`);
+            tracker = ContentTrackerFactory.getTracker(address, type, chain);
+            // Test if it works
+            await tracker.getCollectionInfo();
+            console.log(`Successfully created tracker using fallback type: ${type}`);
+            successful = true;
+            usedType = type;
+            break;
+          } catch (error) {
+            console.warn(`Failed with fallback type ${type}: ${error.message}`);
+          }
+        }
+      }
+    }
+    
+    if (!successful) {
+      console.log(`No compatible tracker found for ${address}`);
       return null;
     }
     
-    // Found in registry, get on-chain data as well
-    const { type, chain: registryChain } = registryInfo;
-    const onChainCollection = await fetchCollectionFromBlockchain(
-      address, 
-      chain === 'all' ? registryChain : chain
-    );
+    // Get collection info
+    const collectionInfo = await tracker.getCollectionInfo();
     
-    // Merge registry data with on-chain data, prioritizing registry for duplicates
+    // Add chain and address info
     return {
-      ...onChainCollection,
-      ...registryInfo,
-      // Ensure these registry fields override blockchain data
-      address: registryInfo.address,
-      type: registryInfo.type,
-      chain: registryChain
+      ...collectionInfo,
+      address,
+      chain,
+      type: usedType
     };
   } catch (error) {
-    console.error('Error fetching collection details:', error);
+    console.error(`Error fetching collection details for ${address}:`, error);
     throw error;
-  }
-}
-
-/**
- * Helper function to fetch collection details from blockchain
- * @param {string} address - Collection address
- * @param {string} chain - Blockchain to search on
- */
-async function fetchCollectionFromBlockchain(address, chain) {
-  const factory = new ContentTrackerFactory();
-    
-  try {
-    console.log(`Trying to fetch collection ${address} from ${chain} blockchain`);
-    
-    // We need to know the content type to get the right tracker
-    // This requires looking through all registered types
-    const contentTypes = ContentTrackerFactory.getRegisteredTypes();
-    
-    // Try each content type until we find one that works
-    for (const contentType of contentTypes) {
-      try {
-        console.log(`Trying content type ${contentType} for ${address}`);
-        const tracker = ContentTrackerFactory.getTracker(address, contentType, chain);
-        const collectionInfo = await tracker.getCollectionInfo();
-        
-        // If we get here, we found it
-        console.log(`Found collection ${address} as type ${contentType}`);
-        return {
-          ...collectionInfo,
-          type: contentType,
-          chain: chain,
-          address: address
-        };
-      } catch (error) {
-        // Not this type, continue to next
-        console.log(`${contentType} didn't work for ${address}: ${error.message}`);
-      }
-    }
-    
-    // If we get here, we tried all content types and none worked
-    console.log(`Collection ${address} not found with any content type`);
-    return null;
-  } catch (error) {
-    console.error(`Error in fetchCollectionFromBlockchain for ${address}:`, error);
-    return null;
   }
 }
 
 /**
  * Get items in a collection
  * @param {string} address - The collection address
- * @param {string} chain - The blockchain to search on
+ * @param {string} chain - The blockchain chain
+ * @param {string} contentTypeHint - Optional content type hint
  * @param {number} limit - Number of items to return
  * @param {number} offset - Pagination offset
  */
-async function getCollectionItems(address, chain, limit, offset) {
+async function getCollectionItems(address, chain, contentTypeHint, limit, offset) {
   try {
-    console.log(`Fetching items for collection ${address}`);
+    console.log(`Fetching items for ${address} on ${chain}`);
     
-    // Find collection in registry to get the content type
-    const allContracts = getContracts('all');
-    const registryInfo = allContracts.find(contract => 
-      contract.address.toLowerCase() === address.toLowerCase()
-    );
-    
-    // If not in registry, try to determine type
-    if (!registryInfo) {
-      console.log(`Collection ${address} not found in registry`);
-      return await fetchItemsWithoutRegistry(address, chain, limit, offset);
+    // Get collection details to determine the right tracker type
+    const collectionInfo = await getCollectionDetails(address, chain, contentTypeHint);
+    if (!collectionInfo) {
+      throw { code: 'NOT_FOUND', message: 'Collection not found' };
     }
     
-    // Use registry info to get the right content type and chain
-    const { type, chain: registryChain } = registryInfo;
-    const targetChain = chain === 'all' ? registryChain : chain;
+    const contentType = collectionInfo.type;
+    console.log(`Using content type: ${contentType}`);
     
-    console.log(`Getting items for ${address} as ${type} on ${targetChain}`);
-    
-    const tracker = ContentTrackerFactory.getTracker(address, type, targetChain);
+    // Create the tracker
+    const tracker = ContentTrackerFactory.getTracker(address, contentType, chain);
     
     // Get token IDs for this collection
     const tokenIds = await tracker.getAllTokens({ maxTokens: limit * 2 });
@@ -302,89 +302,10 @@ async function getCollectionItems(address, chain, limit, offset) {
         offset,
         hasMore: tokenIds.length > offset + limit
       },
-      collection: {
-        ...registryInfo,
-        address,
-        chain: targetChain
-      }
+      collection: collectionInfo
     };
   } catch (error) {
     console.error('Error fetching collection items:', error);
-    throw error;
-  }
-}
-
-/**
- * Helper function to fetch collection items when registry info isn't available
- * @param {string} address - Collection address
- * @param {string} chain - Blockchain to search on
- * @param {number} limit - Number of items to return
- * @param {number} offset - Pagination offset
- */
-async function fetchItemsWithoutRegistry(address, chain, limit, offset) {
-  try {
-    // Need to try each content type
-    const contentTypes = ContentTrackerFactory.getRegisteredTypes();
-    const chains = chain === 'all' ? ['ethereum', 'base', 'optimism', 'zora', 'polygon'] : [chain];
-    
-    for (const chainName of chains) {
-      for (const contentType of contentTypes) {
-        try {
-          console.log(`Trying ${contentType} on ${chainName} for ${address}`);
-          const tracker = ContentTrackerFactory.getTracker(address, contentType, chainName);
-          
-          // See if we can get token IDs for this collection
-          const tokenIds = await tracker.getAllTokens({ maxTokens: limit * 2 });
-          
-          if (tokenIds.length > 0) {
-            console.log(`Found tokens as ${contentType} on ${chainName}`);
-            
-            // Get metadata for each token
-            const items = [];
-            for (const tokenId of tokenIds.slice(offset, offset + limit)) {
-              try {
-                const metadata = await tracker.fetchMetadata(tokenId);
-                items.push(metadata);
-              } catch (error) {
-                console.error(`Error fetching metadata for token ${tokenId}:`, error);
-                items.push({
-                  id: `${address}-${tokenId}`,
-                  tokenId,
-                  error: 'Failed to fetch metadata'
-                });
-              }
-            }
-            
-            // Get collection info
-            const collectionInfo = await tracker.getCollectionInfo();
-            
-            return {
-              items,
-              pagination: {
-                total: tokenIds.length,
-                limit,
-                offset,
-                hasMore: tokenIds.length > offset + limit
-              },
-              collection: {
-                ...collectionInfo,
-                address,
-                chain: chainName,
-                type: contentType
-              }
-            };
-          }
-        } catch (error) {
-          // Not this type or chain, continue to next
-          console.log(`Failed with ${contentType} on ${chainName}: ${error.message}`);
-        }
-      }
-    }
-    
-    // If we get here, we couldn't find any tokens for this collection
-    throw { code: 'NOT_FOUND', message: 'No tokens found for collection' };
-  } catch (error) {
-    console.error('Error in fetchItemsWithoutRegistry:', error);
     throw error;
   }
 }
