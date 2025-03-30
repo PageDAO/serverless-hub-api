@@ -1,5 +1,5 @@
 {
-    "name": "pagedao-hub-api",
+    "name": "serverless-hub-api",
     "version": "1.0.0",
     "description": "API endpoints for PageDAO Hub providing token metrics and content analytics",
     "main": "index.js",
@@ -9,7 +9,7 @@
         "deploy": "netlify deploy --prod"
     },
     "dependencies": {
-        "@pagedao/core": "^0.1.2",
+        "@pagedao/core": "^0.2.0",
         "rate-limiter-flexible": "^2.4.1"
     },
     "devDependencies": {
@@ -20,7 +20,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/pagedao/pagedao-api.git"
+        "url": "git+https://github.com/pagedao/serverless-hub-api.git"
     },
     "keywords": [
         "pagedao",
@@ -29,6 +29,6 @@
         "nft",
         "books"
     ],
-    "author": "PageDAO",
+    "author": "ipfsnut",
     "license": "MIT"
 }

@@ -10,21 +10,9 @@
 
 [functions]
   node_bundler = "esbuild"
-  included_files = ["node_modules/@pagedao/core/**"]
+  external_node_modules = ["@pagedao/core", "rate-limiter-flexible"]
 
-[functions.books]
-  included_files = ["node_modules/@pagedao/core/**"]
-
-[functions.collections]
-  included_files = ["node_modules/@pagedao/core/**"]
-
-[functions.authors]
-  included_files = ["node_modules/@pagedao/core/**"]
-
-[functions.metrics]
-  included_files = ["node_modules/@pagedao/core/**"]
-
-[functions.frame-webhooks]
+[functions.nft]
   included_files = ["node_modules/@pagedao/core/**"]
 
 [dev]
