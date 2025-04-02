@@ -3,423 +3,672 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PageDAO Hub API</title>
+  <title>PageDAO Hub API Tester</title>
   <style>
+    :root {
+      --primary: #0070f3;
+      --secondary: #f5f5f5;
+      --border: #ddd;
+      --text: #333;
+      --success: #0070f3;
+      --error: #ff4d4f;
+      --radius: 6px;
+    }
     body {
-      font-family: system-ui, -apple-system, sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
       line-height: 1.6;
-      max-width: 800px;
+      max-width: 1000px;
       margin: 0 auto;
       padding: 20px;
+      color: var(--text);
+    }
+    h1, h2, h3 {
+      margin-top: 1.5rem;
+      margin-bottom: 1rem;
     }
     h1 {
-      border-bottom: 1px solid #eee;
-      padding-bottom: 10px;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 8px;
+      color: var(--primary);
     }
-    .endpoint {
-      background: #f5f5f5;
-      border-radius: 4px;
-      padding: 15px;
-      margin-bottom: 15px;
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
     }
-    .endpoint h3 {
-      margin-top: 0;
+    @media (max-width: 768px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+    .endpoint-card {
+      background: var(--secondary);
+      border-radius: var(--radius);
+      padding: 16px;
+      border-left: 4px solid var(--primary);
+      margin-bottom: 20px;
+    }
+    .endpoint-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .endpoint-title {
+      margin: 0;
+      font-size: 1.2rem;
+      font-weight: 600;
     }
     code {
       background: #e0e0e0;
-      padding: 2px 5px;
+      padding: 3px 6px;
       border-radius: 3px;
+      font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+      font-size: 0.9em;
+    }
+    .form-group {
+      margin-bottom: 12px;
+    }
+    label {
+      display: block;
+      margin-bottom: 4px;
+      font-weight: 500;
+      font-size: 0.9rem;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      box-sizing: border-box;
     }
     button {
-      background: #0070f3;
+      background: var(--primary);
       color: white;
       border: none;
       padding: 8px 16px;
-      border-radius: 4px;
+      border-radius: var(--radius);
       cursor: pointer;
-      margin-top: 10px;
+      font-weight: 500;
+      transition: all 0.2s;
     }
     button:hover {
-      background: #0060df;
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+    button:active {
+      transform: translateY(1px);
     }
     #results {
-      background: #f0f0f0;
-      padding: 15px;
-      border-radius: 4px;
+      grid-column: 1 / -1;
+      background: #f8f8f8;
+      border-radius: var(--radius);
+      padding: 16px;
       overflow: auto;
-      max-height: 400px;
-      margin-top: 20px;
+      max-height: 500px;
+      border-left: 4px solid var(--primary);
     }
-    input {
-      padding: 8px;
-      margin-top: 5px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      width: 100%;
-      box-sizing: border-box;
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
     }
-    .param-group {
-      margin-top: 10px;
-      margin-bottom: 10px;
+    .tag {
+      display: inline-block;
+      background: #e0e0e0;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-size: 0.75rem;
+      margin-right: 4px;
     }
-    .param-label {
-      font-size: 0.9em;
+    .method {
       font-weight: bold;
+      color: var(--primary);
     }
-    .tooltip {
-      position: relative;
-      display: inline-block;
-      cursor: help;
-      border-bottom: 1px dotted #999;
+    .samples {
+      background: #f0f0f0;
+      padding: 12px;
+      border-radius: var(--radius);
+      margin-top: 10px;
+      font-size: 0.9rem;
     }
-    .tooltip .tooltiptext {
-      visibility: hidden;
-      width: 280px;
-      background-color: #555;
-      color: #fff;
-      text-align: left;
-      border-radius: 6px;
-      padding: 10px;
-      position: absolute;
-      z-index: 1;
-      bottom: 125%;
-      left: 50%;
-      margin-left: -140px;
-      opacity: 0;
-      transition: opacity 0.3s;
-      font-size: 0.9em;
-      line-height: 1.4;
-    }
-    .tooltip:hover .tooltiptext {
-      visibility: visible;
-      opacity: 1;
-    }
-    .collapsible {
+    .sample-header {
+      margin: 0 0 8px 0;
+      font-size: 1rem;
       cursor: pointer;
-      padding: 5px;
-      background-color: #e0e0e0;
-      border-radius: 4px;
-      display: inline-block;
-      margin-bottom: 5px;
+      user-select: none;
     }
-    .collapse-content {
+    .sample-header:hover {
+      color: var(--primary);
+    }
+    .sample-content {
       display: none;
-      padding: 10px;
-      background-color: #f8f8f8;
-      border-radius: 4px;
+      margin-left: 10px;
+    }
+    .sample-content.show {
+      display: block;
+    }
+    .sample-item {
+      margin-bottom: 6px;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .tab {
+      padding: 8px 16px;
+      background: #e0e0e0;
+      border-radius: var(--radius);
+      cursor: pointer;
+    }
+    .tab.active {
+      background: var(--primary);
+      color: white;
+    }
+    .status {
+      display: inline-block;
+      margin-left: 8px;
+      font-size: 0.85rem;
+    }
+    .status.success {
+      color: var(--success);
+    }
+    .status.error {
+      color: var(--error);
     }
   </style>
 </head>
 <body>
-  <h1>PageDAO Hub API</h1>
-  <p>This page demonstrates the PageDAO Hub API endpoints with the new contract-based architecture.</p>
-  <p><strong>Note:</strong> Most endpoints now require explicit contract addresses and chains.</p>
+  <h1>PageDAO Hub API Tester</h1>
+  <p>Test the PageDAO Hub API endpoints with different parameters and view the responses.</p>
   
-  <div class="endpoint">
-    <h3>Books Endpoints</h3>
-    <div>
-      <code>GET /api/books</code>
-      <div class="param-group">
-        <div class="param-label">Book Addresses <span class="tooltip">ⓘ<span class="tooltiptext">Comma-separated list of contract addresses for books you want to fetch.</span></span></div>
-        <input type="text" id="book-addresses" value="0x4F9e2e5e07B0Bfb7Ba4b5902A7F61a41Bd24C0b0,0xf5C424C8c5502135ea9A22bEc42Bb98Fe93A64d9" placeholder="e.g., 0x123,0x456">
-        <div class="param-label">Chains <span class="tooltip">ⓘ<span class="tooltiptext">Comma-separated list of chains in the same order as addresses. If fewer chains than addresses are provided, the first chain will be used for remaining addresses.</span></span></div>
-        <input type="text" id="book-chains" value="base,ethereum" placeholder="e.g., base,ethereum">
-        <div class="param-label">Limit</div>
-        <input type="number" id="book-limit" value="12" min="1" max="100">
+  <div class="tabs">
+    <div class="tab active" onclick="showSection('nft')">NFT Data</div>
+    <div class="tab" onclick="showSection('token')">Token Metrics</div>
+    <div class="tab" onclick="showSection('collections')">Collections</div>
+    <div class="tab" onclick="showSection('samples')">Sample Contracts</div>
+  </div>
+  
+  <div class="container" id="nft-section">
+    <div class="endpoint-card">
+      <div class="endpoint-header">
+        <h3 class="endpoint-title">NFT Metadata</h3>
+        <span class="tag"><span class="method">GET</span> /.netlify/functions/nft</span>
       </div>
-      <button onclick="testEndpoint('/api/books', {
-        addresses: document.getElementById('book-addresses').value,
-        chains: document.getElementById('book-chains').value,
-        limit: document.getElementById('book-limit').value
-      })">Test</button>
+      
+      <div class="form-group">
+        <label for="nft-contract">Contract Address</label>
+        <input type="text" id="nft-contract" value="0x931204fb8cea7f7068995dce924f0d76d571df99" placeholder="0x...">
+      </div>
+      
+      <div class="form-group">
+        <label for="nft-chain">Chain</label>
+        <select id="nft-chain">
+          <option value="ethereum">Ethereum</option>
+          <option value="polygon" selected>Polygon</option>
+          <option value="optimism">Optimism</option>
+          <option value="base">Base</option>
+          <option value="zora">Zora</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="nft-token-id">Token ID</label>
+        <input type="text" id="nft-token-id" value="2" placeholder="e.g., 1">
+      </div>
+      
+      <div class="form-group">
+        <label for="nft-asset-type">Asset Type</label>
+        <select id="nft-asset-type">
+          <option value="book" selected>book</option>
+          <option value="alexandria_book">alexandria_book</option>
+          <option value="publication">publication</option>
+          <option value="mirror_publication">mirror_publication</option>
+          <option value="nft">nft</option>
+          <option value="zora_nft">zora_nft</option>
+        </select>
+      </div>
+      
+      <button onclick="testNFTEndpoint()">Test Endpoint</button>
+      <span id="nft-status" class="status"></span>
     </div>
-    <div>
-      <code>GET /api/books/featured</code>
-      <div class="param-group">
-        <div class="param-label">Featured Book Addresses <span class="tooltip">ⓘ<span class="tooltiptext">Comma-separated list of contract addresses for featured books.</span></span></div>
-        <input type="text" id="featured-book-addresses" value="0x4F9e2e5e07B0Bfb7Ba4b5902A7F61a41Bd24C0b0,0xf5C424C8c5502135ea9A22bEc42Bb98Fe93A64d9" placeholder="e.g., 0x123,0x456">
-        <div class="param-label">Chains</div>
-        <input type="text" id="featured-book-chains" value="base,ethereum" placeholder="e.g., base,ethereum">
-        <div class="param-label">Limit</div>
-        <input type="number" id="featured-book-limit" value="4" min="1" max="100">
+    
+    <div class="endpoint-card">
+      <div class="endpoint-header">
+        <h3 class="endpoint-title">NFT Ownership</h3>
+        <span class="tag"><span class="method">GET</span> /.netlify/functions/nft/ownership</span>
       </div>
-      <button onclick="testEndpoint('/api/books/featured', {
-        addresses: document.getElementById('featured-book-addresses').value,
-        chains: document.getElementById('featured-book-chains').value,
-        limit: document.getElementById('featured-book-limit').value
-      })">Test</button>
-    </div>
-    <div>
-      <code>GET /api/books/{address}</code>
-      <div class="param-group">
-        <div class="param-label">Book Address</div>
-        <input type="text" id="single-book-address" value="0x4F9e2e5e07B0Bfb7Ba4b5902A7F61a41Bd24C0b0" placeholder="e.g., 0x123">
-        <div class="param-label">Chain</div>
-        <input type="text" id="single-book-chain" value="base" placeholder="e.g., base">
+      
+      <div class="form-group">
+        <label for="ownership-contract">Contract Address</label>
+        <input type="text" id="ownership-contract" value="0x931204fb8cea7f7068995dce924f0d76d571df99" placeholder="0x...">
       </div>
-      <button onclick="testEndpoint(`/api/books/${document.getElementById('single-book-address').value}`, {
-        chain: document.getElementById('single-book-chain').value
-      })">Test</button>
+      
+      <div class="form-group">
+        <label for="ownership-chain">Chain</label>
+        <select id="ownership-chain">
+          <option value="ethereum">Ethereum</option>
+          <option value="polygon" selected>Polygon</option>
+          <option value="optimism">Optimism</option>
+          <option value="base">Base</option>
+          <option value="zora">Zora</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="ownership-token-id">Token ID</label>
+        <input type="text" id="ownership-token-id" value="2" placeholder="e.g., 1">
+      </div>
+      
+      <div class="form-group">
+        <label for="ownership-address">Owner Address</label>
+        <input type="text" id="ownership-address" value="0xEd5467Fd62250788EdaA228ae27a609A39B354B0" placeholder="0x...">
+      </div>
+      
+      <div class="form-group">
+        <label for="ownership-asset-type">Asset Type</label>
+        <select id="ownership-asset-type">
+          <option value="book" selected>book</option>
+          <option value="alexandria_book">alexandria_book</option>
+          <option value="publication">publication</option>
+          <option value="mirror_publication">mirror_publication</option>
+          <option value="nft">nft</option>
+          <option value="zora_nft">zora_nft</option>
+        </select>
+      </div>
+      
+      <button onclick="testOwnershipEndpoint()">Test Endpoint</button>
+      <span id="ownership-status" class="status"></span>
     </div>
   </div>
   
-  <div class="endpoint">
-    <h3>Collections Endpoints</h3>
-    <div>
-      <code>GET /api/collections</code>
-      <div class="param-group">
-        <div class="param-label">Collection Addresses <span class="tooltip">ⓘ<span class="tooltiptext">Comma-separated list of contract addresses.</span></span></div>
-        <input type="text" id="collection-addresses" value="0x4F9e2e5e07B0Bfb7Ba4b5902A7F61a41Bd24C0b0,0xf5C424C8c5502135ea9A22bEc42Bb98Fe93A64d9" placeholder="e.g., 0x123,0x456">
-        <div class="param-label">Chains</div>
-        <input type="text" id="collection-chains" value="base,ethereum" placeholder="e.g., base,ethereum">
-        <div class="param-label">Types (optional)</div>
-        <input type="text" id="collection-types" value="alexandria_book,book" placeholder="e.g., book,nft">
-        <div class="param-label">Limit</div>
-        <input type="number" id="collection-limit" value="20" min="1" max="100">
+  <div class="container" id="token-section" style="display: none;">
+    <div class="endpoint-card">
+      <div class="endpoint-header">
+        <h3 class="endpoint-title">Token Prices</h3>
+        <span class="tag"><span class="method">GET</span> /.netlify/functions/token-prices</span>
       </div>
-      <button onclick="testEndpoint('/api/collections', {
-        addresses: document.getElementById('collection-addresses').value,
-        chains: document.getElementById('collection-chains').value,
-        types: document.getElementById('collection-types').value,
-        limit: document.getElementById('collection-limit').value
-      })">Test</button>
-    </div>
-    <div>
-      <code>GET /api/collections/{address}</code>
-      <div class="param-group">
-        <div class="param-label">Collection Address</div>
-        <input type="text" id="single-collection-address" value="0x4F9e2e5e07B0Bfb7Ba4b5902A7F61a41Bd24C0b0" placeholder="e.g., 0x123">
-        <div class="param-label">Chain</div>
-        <input type="text" id="single-collection-chain" value="base" placeholder="e.g., base">
-        <div class="param-label">Type (optional)</div>
-        <input type="text" id="single-collection-type" value="alexandria_book" placeholder="e.g., book">
+      
+      <div class="form-group">
+        <label for="token-chain">Specific Chain (Optional)</label>
+        <select id="token-chain">
+          <option value="">All Chains</option>
+          <option value="ethereum">Ethereum</option>
+          <option value="polygon">Polygon</option>
+          <option value="optimism">Optimism</option>
+          <option value="base">Base</option>
+          <option value="osmosis">Osmosis</option>
+        </select>
       </div>
-      <button onclick="testEndpoint(`/api/collections/${document.getElementById('single-collection-address').value}`, {
-        chain: document.getElementById('single-collection-chain').value,
-        type: document.getElementById('single-collection-type').value
-      })">Test</button>
+      
+      <button onclick="testTokenPrices()">Test Endpoint</button>
+      <span id="token-status" class="status"></span>
     </div>
-    <div>
-      <code>GET /api/collections/{address}/items</code>
-      <div class="param-group">
-        <div class="param-label">Collection Address</div>
-        <input type="text" id="collection-items-address" value="0x4F9e2e5e07B0Bfb7Ba4b5902A7F61a41Bd24C0b0" placeholder="e.g., 0x123">
-        <div class="param-label">Chain</div>
-        <input type="text" id="collection-items-chain" value="base" placeholder="e.g., base">
-        <div class="param-label">Type (optional)</div>
-        <input type="text" id="collection-items-type" value="alexandria_book" placeholder="e.g., book">
-        <div class="param-label">Limit</div>
-        <input type="number" id="collection-items-limit" value="20" min="1" max="100">
+    
+    <div class="endpoint-card">
+      <div class="endpoint-header">
+        <h3 class="endpoint-title">Historical Data</h3>
+        <span class="tag"><span class="method">GET</span> /.netlify/functions/historical-data</span>
       </div>
-      <button onclick="testEndpoint(`/api/collections/${document.getElementById('collection-items-address').value}/items`, {
-        chain: document.getElementById('collection-items-chain').value,
-        type: document.getElementById('collection-items-type').value,
-        limit: document.getElementById('collection-items-limit').value
-      })">Test</button>
-    </div>
-  </div>
-  
-  <div class="endpoint">
-    <h3>Authors Endpoints</h3>
-    <div>
-      <code>GET /api/authors</code>
-      <button onclick="testEndpoint('/api/authors')">Test</button>
-    </div>
-    <div>
-      <code>GET /api/authors/{id}</code>
-      <div class="param-group">
-        <div class="param-label">Author ID/Address</div>
-        <input type="text" id="author-id" value="0x1234567890123456789012345678901234567890" placeholder="e.g., 0x123...">
-      </div>
-      <button onclick="testEndpoint(`/api/authors/${document.getElementById('author-id').value}`)">Test</button>
-    </div>
-    <div>
-      <code>GET /api/authors/{id}/publications</code>
-      <div class="param-group">
-        <div class="param-label">Author ID/Address</div>
-        <input type="text" id="author-publications-id" value="0x1234567890123456789012345678901234567890" placeholder="e.g., 0x123...">
-        <div class="param-label">Limit</div>
-        <input type="number" id="author-publications-limit" value="20" min="1" max="100">
-      </div>
-      <button onclick="testEndpoint(`/api/authors/${document.getElementById('author-publications-id').value}/publications`, {
-        limit: document.getElementById('author-publications-limit').value
-      })">Test</button>
-    </div>
-  </div>
-  
-  <div class="endpoint">
-    <h3>Metrics Endpoints</h3>
-    <div>
-      <code>GET /api/metrics/token-prices</code>
-      <button onclick="testEndpoint('/api/metrics/token-prices')">Test</button>
-    </div>
-    <div>
-      <code>GET /api/metrics/network-comparison</code>
-      <button onclick="testEndpoint('/api/metrics/network-comparison')">Test</button>
-    </div>
-    <div>
-      <code>GET /api/metrics/tvl</code>
-      <button onclick="testEndpoint('/api/metrics/tvl')">Test</button>
-    </div>
-    <div>
-      <code>GET /api/metrics/historical-data</code>
-      <div class="param-group">
-        <div class="param-label">Chain</div>
+      
+      <div class="form-group">
+        <label for="historical-chain">Chain</label>
         <select id="historical-chain">
-          <option value="all">all</option>
-          <option value="ethereum">ethereum</option>
-          <option value="base">base</option>
-          <option value="optimism">optimism</option>
-          <option value="osmosis">osmosis</option>
+          <option value="all">All Chains</option>
+          <option value="ethereum">Ethereum</option>
+          <option value="optimism">Optimism</option>
+          <option value="base">Base</option>
+          <option value="osmosis" selected>Osmosis</option>
         </select>
-        <div class="param-label">Period</div>
+      </div>
+      
+      <div class="form-group">
+        <label for="historical-period">Time Period</label>
         <select id="historical-period">
-          <option value="24h">24h</option>
-          <option value="7d">7d</option>
-          <option value="30d">30d</option>
+          <option value="24h">24 Hours</option>
+          <option value="7d" selected>7 Days</option>
+          <option value="30d">30 Days</option>
         </select>
       </div>
-      <button onclick="testEndpoint('/api/metrics/historical-data', {
-        chain: document.getElementById('historical-chain').value,
-        period: document.getElementById('historical-period').value
-      })">Test</button>
+      
+      <button onclick="testHistoricalData()">Test Endpoint</button>
+      <span id="historical-status" class="status"></span>
     </div>
   </div>
   
-  <div class="endpoint">
-    <h3>Blockchain Data Endpoints</h3>
-    <div>
-      <code>GET /api/blockchain/{chain}/{address}/{method}</code>
-      <div class="param-group">
-        <div class="param-label">Chain</div>
-        <select id="blockchain-chain">
-          <option value="ethereum">ethereum</option>
-          <option value="base">base</option>
-          <option value="optimism">optimism</option>
-          <option value="polygon">polygon</option>
-          <option value="zora">zora</option>
-        </select>
-        <div class="param-label">Address</div>
-        <input type="text" id="blockchain-address" value="0x4F9e2e5e07B0Bfb7Ba4b5902A7F61a41Bd24C0b0" placeholder="Contract address">
-        <div class="param-label">Method</div>
-        <select id="blockchain-method">
-          <option value="info">info</option>
-          <option value="metadata">metadata</option>
-          <option value="tokens">tokens</option>
-          <option value="ownership">ownership</option>
-          <option value="rights">rights</option>
-          <option value="ownerTokens">ownerTokens</option>
-        </select>
-        <div class="param-label">Parameters (comma-separated)</div>
-        <input type="text" id="blockchain-params" placeholder="e.g., 1 for tokenId">
-        <div class="param-label">Content Type (optional)</div>
-        <input type="text" id="blockchain-type" value="alexandria_book" placeholder="e.g., book">
+  <div class="container" id="collections-section" style="display: none;">
+    <div class="endpoint-card">
+      <div class="endpoint-header">
+        <h3 class="endpoint-title">Collection Items</h3>
+        <span class="tag"><span class="method">GET</span> /.netlify/functions/nft/collection</span>
       </div>
-      <button onclick="testBlockchainEndpoint()">Test</button>
+      
+      <div class="form-group">
+        <label for="collection-contract">Contract Address</label>
+        <input type="text" id="collection-contract" value="0x4F9e2e5e07B0Bfb7Ba4b5902A7F61a41Bd24C0b0" placeholder="0x...">
+      </div>
+      
+      <div class="form-group">
+        <label for="collection-chain">Chain</label>
+        <select id="collection-chain">
+          <option value="ethereum">Ethereum</option>
+          <option value="polygon">Polygon</option>
+          <option value="optimism">Optimism</option>
+          <option value="base" selected>Base</option>
+          <option value="zora">Zora</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="collection-type">Asset Type</label>
+        <select id="collection-type">
+          <option value="book">book</option>
+          <option value="alexandria_book" selected>alexandria_book</option>
+          <option value="publication">publication</option>
+          <option value="mirror_publication">mirror_publication</option>
+          <option value="nft">nft</option>
+          <option value="zora_nft">zora_nft</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="collection-limit">Limit</label>
+        <input type="number" id="collection-limit" value="10" placeholder="Max items to return">
+      </div>
+      
+      <button onclick="testCollectionEndpoint()">Test Endpoint</button>
+      <span id="collection-status" class="status"></span>
+    </div>
+    
+    <div class="endpoint-card">
+      <div class="endpoint-header">
+        <h3 class="endpoint-title">Owner Tokens</h3>
+        <span class="tag"><span class="method">GET</span> /.netlify/functions/nft/owner</span>
+      </div>
+      
+      <div class="form-group">
+        <label for="owner-address">Owner Address</label>
+        <input type="text" id="owner-address" value="0xEd5467Fd62250788EdaA228ae27a609A39B354B0" placeholder="0x...">
+      </div>
+      
+      <div class="form-group">
+        <label for="owner-contract">Contract Address (Optional)</label>
+        <input type="text" id="owner-contract" value="" placeholder="0x... (leave empty for all contracts)">
+      </div>
+      
+      <div class="form-group">
+        <label for="owner-chain">Chain</label>
+        <select id="owner-chain">
+          <option value="ethereum">Ethereum</option>
+          <option value="polygon" selected>Polygon</option>
+          <option value="optimism">Optimism</option>
+          <option value="base">Base</option>
+          <option value="zora">Zora</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="owner-type">Asset Type</label>
+        <select id="owner-type">
+          <option value="book" selected>book</option>
+          <option value="alexandria_book">alexandria_book</option>
+          <option value="publication">publication</option>
+          <option value="nft">nft</option>
+        </select>
+      </div>
+      
+      <button onclick="testOwnerTokensEndpoint()">Test Endpoint</button>
+      <span id="owner-status" class="status"></span>
     </div>
   </div>
   
-  <div class="endpoint">
-    <h3>Sample Contract Addresses</h3>
-    <div class="collapsible" onclick="toggleSampleAddresses()">Click to show/hide sample addresses</div>
-    <div id="sample-addresses" class="collapse-content">
-      <p><strong>Base Chain:</strong></p>
-      <ul>
-        <li><code>0x4F9e2e5e07B0Bfb7Ba4b5902A7F61a41Bd24C0b0</code> - Alexandria Book</li>
-        <li><code>0xa1b2c3d4e5f67890a1b2c3d4e5f67890</code> - Sample Base Publication</li>
-      </ul>
-      <p><strong>Ethereum:</strong></p>
-      <ul>
-        <li><code>0xf5C424C8c5502135ea9A22bEc42Bb98Fe93A64d9</code> - Ethereum Book</li>
-        <li><code>0x1234567890abcdef1234567890abcdef</code> - Sample ETH Publication</li>
-      </ul>
-      <p><strong>Optimism:</strong></p>
-      <ul>
-        <li><code>0xa1b2c3d4e5f67890a1b2c3d4e5f67890</code> - Sample Optimism Book</li>
-      </ul>
-      <p><strong>Polygon:</strong></p>
-      <ul>
-        <li><code>0x1234567890abcdef1234567890abcdef</code> - Sample Polygon Book</li>
-      </ul>
-      <p><strong>Zora:</strong></p>
-      <ul>
-        <li><code>0xabcdef1234567890abcdef1234567890</code> - Sample Zora NFT</li>
-      </ul>
+  <div id="samples-section" style="display: none;">
+    <div class="endpoint-card">
+      <h3>Sample Contract Addresses</h3>
+      <p>Use these contract addresses for testing different NFT types across chains.</p>
+      
+      <div class="samples">
+        <h4 class="sample-header" onclick="toggleSample('polygon')">Polygon Contracts ▶</h4>
+        <div class="sample-content" id="polygon-samples">
+          <div class="sample-item">
+            <strong>ReadMe Books:</strong> 0x931204fb8cea7f7068995dce924f0d76d571df99 
+            <button onclick="fillForm('nft', {
+              contract: '0x931204fb8cea7f7068995dce924f0d76d571df99',
+              chain: 'polygon',
+              tokenId: '2',
+              type: 'book'
+            })">Use</button>
+          </div>
+        </div>
+        
+        <h4 class="sample-header" onclick="toggleSample('base')">Base Contracts ▶</h4>
+        <div class="sample-content" id="base-samples">
+          <div class="sample-item">
+            <strong>Alexandria Book:</strong> 0x4F9e2e5e07B0Bfb7Ba4b5902A7F61a41Bd24C0b0
+            <button onclick="fillForm('nft', {
+              contract: '0x4F9e2e5e07B0Bfb7Ba4b5902A7F61a41Bd24C0b0',
+              chain: 'base',
+              tokenId: '1',
+              type: 'alexandria_book'
+            })">Use</button>
+          </div>
+        </div>
+        
+        <h4 class="sample-header" onclick="toggleSample('ethereum')">Ethereum Contracts ▶</h4>
+        <div class="sample-content" id="ethereum-samples">
+          <div class="sample-item">
+            <strong>ReadMe Books:</strong> 0xf5C424C8c5502135ea9A22bEc42Bb98Fe93A64d9
+            <button onclick="fillForm('nft', {
+              contract: '0xf5C424C8c5502135ea9A22bEc42Bb98Fe93A64d9',
+              chain: 'ethereum',
+              tokenId: '1',
+              type: 'book'
+            })">Use</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
   
   <div id="results">
-    <p>Results will appear here...</p>
+    <h2>Response</h2>
+    <pre id="response-container">Test an endpoint to see results...</pre>
   </div>
   
   <script>
-    async function testEndpoint(url, params = {}) {
-      const resultsDiv = document.getElementById('results');
-      resultsDiv.innerHTML = '<p>Loading...</p>';
+    // Tab switching
+    function showSection(section) {
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      
+      document.querySelectorAll(`.tab`).forEach(tab => {
+        if (tab.textContent.toLowerCase().includes(section)) {
+          tab.classList.add('active');
+        }
+      });
+      
+      // Hide all sections
+      document.getElementById('nft-section').style.display = 'none';
+      document.getElementById('token-section').style.display = 'none';
+      document.getElementById('collections-section').style.display = 'none';
+      document.getElementById('samples-section').style.display = 'none';
+      
+      // Show selected section
+      document.getElementById(`${section}-section`).style.display = 'grid';
+    }
+    
+    // Toggle sample sections
+    function toggleSample(id) {
+      const content = document.getElementById(`${id}-samples`);
+      content.classList.toggle('show');
+    }
+    
+    // Fill form with sample data
+    function fillForm(endpoint, data) {
+      if (endpoint === 'nft') {
+        document.getElementById('nft-contract').value = data.contract;
+        document.getElementById('nft-chain').value = data.chain;
+        document.getElementById('nft-token-id').value = data.tokenId;
+        document.getElementById('nft-asset-type').value = data.type;
+        
+        // Switch to NFT tab
+        showSection('nft');
+      }
+    }
+    
+    // Format the JSON response
+    function formatResponse(data) {
+      return JSON.stringify(data, null, 2);
+    }
+    
+    // Set status message
+    function setStatus(elementId, success, message) {
+      const element = document.getElementById(elementId);
+      element.textContent = message;
+      element.className = 'status ' + (success ? 'success' : 'error');
+    }
+    
+    // API base URL
+    const API_BASE = 'https://pagedao-hub-serverless-api.netlify.app';
+    
+    // Test NFT Metadata Endpoint
+    async function testNFTEndpoint() {
+      const contractAddr = document.getElementById('nft-contract').value;
+      const chain = document.getElementById('nft-chain').value;
+      const tokenId = document.getElementById('nft-token-id').value;
+      const assetType = document.getElementById('nft-asset-type').value;
+      
+      setStatus('nft-status', true, 'Loading...');
       
       try {
-        // Add query parameters if provided
-        if (Object.keys(params).length > 0) {
-          const queryString = Object.entries(params)
-            .filter(([_, value]) => value) // Remove empty values
-            .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
-            .join('&');
-          
-          url = `${url}?${queryString}`;
-        }
-        
-        console.log(`Calling API: ${url}`);
+        const url = `${API_BASE}/.netlify/functions/nft/${contractAddr}/${chain}/${tokenId}?assetType=${assetType}`;
         const response = await fetch(url);
         const data = await response.json();
         
-        // Format the JSON with syntax highlighting
-        resultsDiv.innerHTML = `
-          <h4>Response from ${url}</h4>
-          <pre>${JSON.stringify(data, null, 2)}</pre>
-        `;
+        document.getElementById('response-container').textContent = formatResponse(data);
+        setStatus('nft-status', true, '✓ Success');
       } catch (error) {
-        resultsDiv.innerHTML = `
-          <h4>Error from ${url}</h4>
-          <pre>${error.message}</pre>
-        `;
+        document.getElementById('response-container').textContent = `Error: ${error.message}`;
+        setStatus('nft-status', false, '✗ Failed');
       }
     }
     
-    function testBlockchainEndpoint() {
-      const chain = document.getElementById('blockchain-chain').value;
-      const address = document.getElementById('blockchain-address').value;
-      const method = document.getElementById('blockchain-method').value;
-      const params = document.getElementById('blockchain-params').value;
-      const type = document.getElementById('blockchain-type').value;
+    // Test NFT Ownership Endpoint
+    async function testOwnershipEndpoint() {
+      const contractAddr = document.getElementById('ownership-contract').value;
+      const chain = document.getElementById('ownership-chain').value;
+      const tokenId = document.getElementById('ownership-token-id').value;
+      const ownerAddr = document.getElementById('ownership-address').value;
+      const assetType = document.getElementById('ownership-asset-type').value;
       
-      let url = `/api/blockchain/${chain}/${address}/${method}`;
+      setStatus('ownership-status', true, 'Loading...');
       
-      // Add params to URL if provided
-      if (params) {
-        const paramSegments = params.split(',');
-        url += `/${paramSegments.join('/')}`;
-      }
-      
-      // Call the API with type as a query parameter
-      testEndpoint(url, { type });
-    }
-    
-    function toggleSampleAddresses() {
-      const content = document.getElementById('sample-addresses');
-      if (content.style.display === 'block') {
-        content.style.display = 'none';
-      } else {
-        content.style.display = 'block';
+      try {
+        const url = `${API_BASE}/.netlify/functions/nft/ownership/${contractAddr}/${chain}/${tokenId}/${ownerAddr}?assetType=${assetType}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        document.getElementById('response-container').textContent = formatResponse(data);
+        setStatus('ownership-status', true, '✓ Success');
+      } catch (error) {
+        document.getElementById('response-container').textContent = `Error: ${error.message}`;
+        setStatus('ownership-status', false, '✗ Failed');
       }
     }
     
-    // When the page loads
-    document.addEventListener('DOMContentLoaded', function() {
-      // Explain how to use the page
-      console.log("PageDAO Hub API Test Page");
-      console.log("Fill in the parameters and click Test to call the API.");
-      console.log("Sample addresses are provided for testing.");
-    });
+    // Test Collection Endpoint
+    async function testCollectionEndpoint() {
+      const contractAddr = document.getElementById('collection-contract').value;
+      const chain = document.getElementById('collection-chain').value;
+      const assetType = document.getElementById('collection-type').value;
+      const limit = document.getElementById('collection-limit').value;
+      
+      setStatus('collection-status', true, 'Loading...');
+      
+      try {
+        const url = `${API_BASE}/.netlify/functions/nft/collection/${contractAddr}/${chain}?assetType=${assetType}&limit=${limit}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        document.getElementById('response-container').textContent = formatResponse(data);
+        setStatus('collection-status', true, '✓ Success');
+      } catch (error) {
+        document.getElementById('response-container').textContent = `Error: ${error.message}`;
+        setStatus('collection-status', false, '✗ Failed');
+      }
+    }
+    
+    // Test Owner Tokens Endpoint
+    async function testOwnerTokensEndpoint() {
+      const ownerAddr = document.getElementById('owner-address').value;
+      const contractAddr = document.getElementById('owner-contract').value;
+      const chain = document.getElementById('owner-chain').value;
+      const assetType = document.getElementById('owner-type').value;
+      
+      setStatus('owner-status', true, 'Loading...');
+      
+      try {
+        let url = `${API_BASE}/.netlify/functions/nft/owner/${ownerAddr}/${chain}?assetType=${assetType}`;
+        if (contractAddr) {
+          url += `&contractAddress=${contractAddr}`;
+        }
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        document.getElementById('response-container').textContent = formatResponse(data);
+        setStatus('owner-status', true, '✓ Success');
+      } catch (error) {
+        document.getElementById('response-container').textContent = `Error: ${error.message}`;
+        setStatus('owner-status', false, '✗ Failed');
+      }
+    }
+    
+    // Test Token Prices Endpoint
+    async function testTokenPrices() {
+      const chain = document.getElementById('token-chain').value;
+      
+      setStatus('token-status', true, 'Loading...');
+      
+      try {
+        let url = `${API_BASE}/.netlify/functions/token-prices`;
+        if (chain) {
+          url += `?chain=${chain}`;
+        }
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        document.getElementById('response-container').textContent = formatResponse(data);
+        setStatus('token-status', true, '✓ Success');
+      } catch (error) {
+        document.getElementById('response-container').textContent = `Error: ${error.message}`;
+        setStatus('token-status', false, '✗ Failed');
+      }
+    }
+    
+    // Test Historical Data Endpoint
+    async function testHistoricalData() {
+      const chain = document.getElementById('historical-chain').value;
+      const period = document.getElementById('historical-period').value;
+      
+      setStatus('historical-status', true, 'Loading...');
+      
+      try {
+        const url = `${API_BASE}/.netlify/functions/historical-data?chain=${chain}&period=${period}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        document.getElementById('response-container').textContent = formatResponse(data);
+        setStatus('historical-status', true, '✓ Success');
+      } catch (error) {
+        document.getElementById('response-container').textContent = `Error: ${error.message}`;
+        setStatus('historical-status', false, '✗ Failed');
+      }
+    }
   </script>
 </body>
 </html>
