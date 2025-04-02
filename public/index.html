@@ -187,7 +187,6 @@
   <div class="tabs">
     <div class="tab active" onclick="showSection('nft')">NFT Data</div>
     <div class="tab" onclick="showSection('token')">Token Metrics</div>
-    <div class="tab" onclick="showSection('collections')">Collections</div>
     <div class="tab" onclick="showSection('samples')">Sample Contracts</div>
   </div>
   
@@ -237,20 +236,20 @@
     
     <div class="endpoint-card">
       <div class="endpoint-header">
-        <h3 class="endpoint-title">NFT Ownership</h3>
-        <span class="tag"><span class="method">GET</span> /.netlify/functions/nft/ownership</span>
+        <h3 class="endpoint-title">Custom Contract Test</h3>
+        <span class="tag">Try your own contract</span>
       </div>
       
       <div class="form-group">
-        <label for="ownership-contract">Contract Address</label>
-        <input type="text" id="ownership-contract" value="0x931204fb8cea7f7068995dce924f0d76d571df99" placeholder="0x...">
+        <label for="custom-contract">Contract Address</label>
+        <input type="text" id="custom-contract" placeholder="0x...">
       </div>
       
       <div class="form-group">
-        <label for="ownership-chain">Chain</label>
-        <select id="ownership-chain">
+        <label for="custom-chain">Chain</label>
+        <select id="custom-chain">
           <option value="ethereum">Ethereum</option>
-          <option value="polygon" selected>Polygon</option>
+          <option value="polygon">Polygon</option>
           <option value="optimism">Optimism</option>
           <option value="base">Base</option>
           <option value="zora">Zora</option>
@@ -258,19 +257,14 @@
       </div>
       
       <div class="form-group">
-        <label for="ownership-token-id">Token ID</label>
-        <input type="text" id="ownership-token-id" value="2" placeholder="e.g., 1">
+        <label for="custom-token-id">Token ID</label>
+        <input type="text" id="custom-token-id" placeholder="e.g., 1">
       </div>
       
       <div class="form-group">
-        <label for="ownership-address">Owner Address</label>
-        <input type="text" id="ownership-address" value="0xEd5467Fd62250788EdaA228ae27a609A39B354B0" placeholder="0x...">
-      </div>
-      
-      <div class="form-group">
-        <label for="ownership-asset-type">Asset Type</label>
-        <select id="ownership-asset-type">
-          <option value="book" selected>book</option>
+        <label for="custom-asset-type">Asset Type</label>
+        <select id="custom-asset-type">
+          <option value="book">book</option>
           <option value="alexandria_book">alexandria_book</option>
           <option value="publication">publication</option>
           <option value="mirror_publication">mirror_publication</option>
@@ -279,8 +273,8 @@
         </select>
       </div>
       
-      <button onclick="testOwnershipEndpoint()">Test Endpoint</button>
-      <span id="ownership-status" class="status"></span>
+      <button onclick="testCustomContract()">Test Custom Contract</button>
+      <span id="custom-status" class="status"></span>
     </div>
   </div>
   
@@ -296,7 +290,6 @@
         <select id="token-chain">
           <option value="">All Chains</option>
           <option value="ethereum">Ethereum</option>
-          <option value="polygon">Polygon</option>
           <option value="optimism">Optimism</option>
           <option value="base">Base</option>
           <option value="osmosis">Osmosis</option>
@@ -338,103 +331,17 @@
     </div>
   </div>
   
-  <div class="container" id="collections-section" style="display: none;">
-    <div class="endpoint-card">
-      <div class="endpoint-header">
-        <h3 class="endpoint-title">Collection Items</h3>
-        <span class="tag"><span class="method">GET</span> /.netlify/functions/nft/collection</span>
-      </div>
-      
-      <div class="form-group">
-        <label for="collection-contract">Contract Address</label>
-        <input type="text" id="collection-contract" value="0x4F9e2e5e07B0Bfb7Ba4b5902A7F61a41Bd24C0b0" placeholder="0x...">
-      </div>
-      
-      <div class="form-group">
-        <label for="collection-chain">Chain</label>
-        <select id="collection-chain">
-          <option value="ethereum">Ethereum</option>
-          <option value="polygon">Polygon</option>
-          <option value="optimism">Optimism</option>
-          <option value="base" selected>Base</option>
-          <option value="zora">Zora</option>
-        </select>
-      </div>
-      
-      <div class="form-group">
-        <label for="collection-type">Asset Type</label>
-        <select id="collection-type">
-          <option value="book">book</option>
-          <option value="alexandria_book" selected>alexandria_book</option>
-          <option value="publication">publication</option>
-          <option value="mirror_publication">mirror_publication</option>
-          <option value="nft">nft</option>
-          <option value="zora_nft">zora_nft</option>
-        </select>
-      </div>
-      
-      <div class="form-group">
-        <label for="collection-limit">Limit</label>
-        <input type="number" id="collection-limit" value="10" placeholder="Max items to return">
-      </div>
-      
-      <button onclick="testCollectionEndpoint()">Test Endpoint</button>
-      <span id="collection-status" class="status"></span>
-    </div>
-    
-    <div class="endpoint-card">
-      <div class="endpoint-header">
-        <h3 class="endpoint-title">Owner Tokens</h3>
-        <span class="tag"><span class="method">GET</span> /.netlify/functions/nft/owner</span>
-      </div>
-      
-      <div class="form-group">
-        <label for="owner-address">Owner Address</label>
-        <input type="text" id="owner-address" value="0xEd5467Fd62250788EdaA228ae27a609A39B354B0" placeholder="0x...">
-      </div>
-      
-      <div class="form-group">
-        <label for="owner-contract">Contract Address (Optional)</label>
-        <input type="text" id="owner-contract" value="" placeholder="0x... (leave empty for all contracts)">
-      </div>
-      
-      <div class="form-group">
-        <label for="owner-chain">Chain</label>
-        <select id="owner-chain">
-          <option value="ethereum">Ethereum</option>
-          <option value="polygon" selected>Polygon</option>
-          <option value="optimism">Optimism</option>
-          <option value="base">Base</option>
-          <option value="zora">Zora</option>
-        </select>
-      </div>
-      
-      <div class="form-group">
-        <label for="owner-type">Asset Type</label>
-        <select id="owner-type">
-          <option value="book" selected>book</option>
-          <option value="alexandria_book">alexandria_book</option>
-          <option value="publication">publication</option>
-          <option value="nft">nft</option>
-        </select>
-      </div>
-      
-      <button onclick="testOwnerTokensEndpoint()">Test Endpoint</button>
-      <span id="owner-status" class="status"></span>
-    </div>
-  </div>
-  
   <div id="samples-section" style="display: none;">
     <div class="endpoint-card">
       <h3>Sample Contract Addresses</h3>
-      <p>Use these contract addresses for testing different NFT types across chains.</p>
+      <p>Use these verified contract addresses for testing different NFT types across chains.</p>
       
       <div class="samples">
         <h4 class="sample-header" onclick="toggleSample('polygon')">Polygon Contracts ▶</h4>
         <div class="sample-content" id="polygon-samples">
           <div class="sample-item">
             <strong>ReadMe Books:</strong> 0x931204fb8cea7f7068995dce924f0d76d571df99 
-            <button onclick="fillForm('nft', {
+            <button onclick="fillForm({
               contract: '0x931204fb8cea7f7068995dce924f0d76d571df99',
               chain: 'polygon',
               tokenId: '2',
@@ -447,7 +354,7 @@
         <div class="sample-content" id="base-samples">
           <div class="sample-item">
             <strong>Alexandria Book:</strong> 0x4F9e2e5e07B0Bfb7Ba4b5902A7F61a41Bd24C0b0
-            <button onclick="fillForm('nft', {
+            <button onclick="fillForm({
               contract: '0x4F9e2e5e07B0Bfb7Ba4b5902A7F61a41Bd24C0b0',
               chain: 'base',
               tokenId: '1',
@@ -459,9 +366,9 @@
         <h4 class="sample-header" onclick="toggleSample('ethereum')">Ethereum Contracts ▶</h4>
         <div class="sample-content" id="ethereum-samples">
           <div class="sample-item">
-            <strong>ReadMe Books:</strong> 0xf5C424C8c5502135ea9A22bEc42Bb98Fe93A64d9
-            <button onclick="fillForm('nft', {
-              contract: '0xf5C424C8c5502135ea9A22bEc42Bb98Fe93A64d9',
+            <strong>The Mask of Ganymede:</strong> 0xf5C424C8c5502135ea9A22bEc42Bb98Fe93A64d9
+            <button onclick="fillForm({
+              contract: '0x13f18c5DBA9A1e5218D52E583A8Ac8a667Cb680A',
               chain: 'ethereum',
               tokenId: '1',
               type: 'book'
@@ -493,11 +400,14 @@
       // Hide all sections
       document.getElementById('nft-section').style.display = 'none';
       document.getElementById('token-section').style.display = 'none';
-      document.getElementById('collections-section').style.display = 'none';
       document.getElementById('samples-section').style.display = 'none';
       
       // Show selected section
-      document.getElementById(`${section}-section`).style.display = 'grid';
+      if (section === 'nft' || section === 'token') {
+        document.getElementById(`${section}-section`).style.display = 'grid';
+      } else {
+        document.getElementById(`${section}-section`).style.display = 'block';
+      }
     }
     
     // Toggle sample sections
@@ -507,16 +417,14 @@
     }
     
     // Fill form with sample data
-    function fillForm(endpoint, data) {
-      if (endpoint === 'nft') {
-        document.getElementById('nft-contract').value = data.contract;
-        document.getElementById('nft-chain').value = data.chain;
-        document.getElementById('nft-token-id').value = data.tokenId;
-        document.getElementById('nft-asset-type').value = data.type;
-        
-        // Switch to NFT tab
-        showSection('nft');
-      }
+    function fillForm(data) {
+      document.getElementById('nft-contract').value = data.contract;
+      document.getElementById('nft-chain').value = data.chain;
+      document.getElementById('nft-token-id').value = data.tokenId;
+      document.getElementById('nft-asset-type').value = data.type;
+      
+      // Switch to NFT tab
+      showSection('nft');
     }
     
     // Format the JSON response
@@ -541,6 +449,11 @@
       const tokenId = document.getElementById('nft-token-id').value;
       const assetType = document.getElementById('nft-asset-type').value;
       
+      if (!contractAddr || !tokenId) {
+        setStatus('nft-status', false, '✗ Missing required fields');
+        return;
+      }
+      
       setStatus('nft-status', true, 'Loading...');
       
       try {
@@ -556,74 +469,30 @@
       }
     }
     
-    // Test NFT Ownership Endpoint
-    async function testOwnershipEndpoint() {
-      const contractAddr = document.getElementById('ownership-contract').value;
-      const chain = document.getElementById('ownership-chain').value;
-      const tokenId = document.getElementById('ownership-token-id').value;
-      const ownerAddr = document.getElementById('ownership-address').value;
-      const assetType = document.getElementById('ownership-asset-type').value;
+    // Test Custom Contract
+    async function testCustomContract() {
+      const contractAddr = document.getElementById('custom-contract').value;
+      const chain = document.getElementById('custom-chain').value;
+      const tokenId = document.getElementById('custom-token-id').value;
+      const assetType = document.getElementById('custom-asset-type').value;
       
-      setStatus('ownership-status', true, 'Loading...');
-      
-      try {
-        const url = `${API_BASE}/.netlify/functions/nft/ownership/${contractAddr}/${chain}/${tokenId}/${ownerAddr}?assetType=${assetType}`;
-        const response = await fetch(url);
-        const data = await response.json();
-        
-        document.getElementById('response-container').textContent = formatResponse(data);
-        setStatus('ownership-status', true, '✓ Success');
-      } catch (error) {
-        document.getElementById('response-container').textContent = `Error: ${error.message}`;
-        setStatus('ownership-status', false, '✗ Failed');
+      if (!contractAddr || !tokenId) {
+        setStatus('custom-status', false, '✗ Missing required fields');
+        return;
       }
-    }
-    
-    // Test Collection Endpoint
-    async function testCollectionEndpoint() {
-      const contractAddr = document.getElementById('collection-contract').value;
-      const chain = document.getElementById('collection-chain').value;
-      const assetType = document.getElementById('collection-type').value;
-      const limit = document.getElementById('collection-limit').value;
       
-      setStatus('collection-status', true, 'Loading...');
+      setStatus('custom-status', true, 'Loading...');
       
       try {
-        const url = `${API_BASE}/.netlify/functions/nft/collection/${contractAddr}/${chain}?assetType=${assetType}&limit=${limit}`;
+        const url = `${API_BASE}/.netlify/functions/nft/${contractAddr}/${chain}/${tokenId}?assetType=${assetType}`;
         const response = await fetch(url);
         const data = await response.json();
         
         document.getElementById('response-container').textContent = formatResponse(data);
-        setStatus('collection-status', true, '✓ Success');
+        setStatus('custom-status', true, '✓ Success');
       } catch (error) {
         document.getElementById('response-container').textContent = `Error: ${error.message}`;
-        setStatus('collection-status', false, '✗ Failed');
-      }
-    }
-    
-    // Test Owner Tokens Endpoint
-    async function testOwnerTokensEndpoint() {
-      const ownerAddr = document.getElementById('owner-address').value;
-      const contractAddr = document.getElementById('owner-contract').value;
-      const chain = document.getElementById('owner-chain').value;
-      const assetType = document.getElementById('owner-type').value;
-      
-      setStatus('owner-status', true, 'Loading...');
-      
-      try {
-        let url = `${API_BASE}/.netlify/functions/nft/owner/${ownerAddr}/${chain}?assetType=${assetType}`;
-        if (contractAddr) {
-          url += `&contractAddress=${contractAddr}`;
-        }
-        
-        const response = await fetch(url);
-        const data = await response.json();
-        
-        document.getElementById('response-container').textContent = formatResponse(data);
-        setStatus('owner-status', true, '✓ Success');
-      } catch (error) {
-        document.getElementById('response-container').textContent = `Error: ${error.message}`;
-        setStatus('owner-status', false, '✗ Failed');
+        setStatus('custom-status', false, '✗ Failed');
       }
     }
     
@@ -669,6 +538,11 @@
         setStatus('historical-status', false, '✗ Failed');
       }
     }
+    
+    // Auto-expand first sample section on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      toggleSample('polygon');
+    });
   </script>
 </body>
 </html>
