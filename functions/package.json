@@ -8,7 +8,7 @@
   },
   "type": "commonjs",
   "dependencies": {
-    "@pagedao/core": "^0.3.2",
+    "@pagedao/core": "^0.3.3",
     "rate-limiter-flexible": "^2.4.2"
   }
 }
