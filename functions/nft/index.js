@@ -22,8 +22,107 @@ exports.handler = async function(event) {
     const chain = path[1] || queryParams.chain || 'ethereum';
     const assetType = queryParams.assetType || 'nft';
     
+    // Special case for batch endpoint (path[0] === 'batch')
+    if (path[0] === 'batch') {
+      const batchContractAddress = path[1] || queryParams.contract;
+      const batchChain = path[2] || queryParams.chain || 'ethereum';
+      const batchAssetType = queryParams.assetType || 'nft';
+      
+      if (!batchContractAddress) {
+        return createResponse({ error: 'Contract address is required for batch requests' }, 400, {}, isFrame);
+      }
+      
+      const tokenIds = queryParams.tokenIds ? queryParams.tokenIds.split(',') : [];
+      if (tokenIds.length === 0) {
+        return createResponse({ error: 'No token IDs provided for batch request' }, 400, {}, isFrame);
+      }
+      
+      // Limit batch size to prevent abuse
+      const maxBatchSize = 20;
+      const limitedTokenIds = tokenIds.slice(0, maxBatchSize);
+      
+      try {
+        // Fetch metadata for each token ID in parallel
+        const includeOwnership = queryParams.includeOwnership === 'true';
+        const metadataPromises = limitedTokenIds.map(tokenId => 
+          fetchNFTMetadata(
+            batchContractAddress, 
+            batchAssetType, 
+            batchChain, 
+            tokenId, 
+            { includeOwnership }
+          )
+        );
+        
+        const metadataResults = await Promise.all(metadataPromises);
+        
+        return createResponse({ 
+          contractAddress: batchContractAddress,
+          chain: batchChain,
+          assetType: batchAssetType,
+          items: metadataResults,
+          count: metadataResults.length,
+          request: {
+            requested: tokenIds.length,
+            processed: limitedTokenIds.length
+          }
+        }, 200, {}, isFrame);
+      } catch (error) {
+        console.error('Error fetching batch metadata:', error);
+        return createResponse({ 
+          error: 'Failed to fetch batch metadata', 
+          details: error.message 
+        }, 500, {}, isFrame);
+      }
+    }
+    
     if (!contractAddress) {
       return createResponse({ error: 'Contract address is required' }, 400, {}, isFrame);
+    }
+    
+    // Handle collection metadata queries
+    if (path[2] === 'collection-info') {
+      try {
+        // For collection metadata, we need to make a few contract calls
+        // We'll use a representative token ID to get basic metadata
+        const representativeTokenId = '1'; // Most collections start at token ID 1
+        
+        // Get basic collection metadata from a representative token
+        const metadata = await fetchNFTMetadata(
+          contractAddress, 
+          assetType, 
+          chain, 
+          representativeTokenId
+        );
+        
+        // We might need additional information from the contract
+        // This would depend on the contract's ABI and available methods
+        // For now, we'll return what we have from the metadata
+        
+        return createResponse({
+          name: metadata.title || 'Unknown Collection',
+          description: metadata.description || '',
+          contractAddress,
+          chain,
+          assetType,
+          imageURI: metadata.imageURI || '',
+          creator: metadata.creator || '',
+          symbol: metadata.additionalData?.symbol || '',
+          totalSupply: metadata.totalSupply || undefined,
+          maxSupply: metadata.maxSupply || undefined,
+          format: metadata.format || 'nft',
+          collectionData: {
+            representativeTokenId: representativeTokenId,
+            representativeMetadata: metadata
+          }
+        }, 200, {}, isFrame);
+      } catch (error) {
+        console.error('Error fetching collection info:', error);
+        return createResponse({ 
+          error: 'Failed to fetch collection info', 
+          details: error.message 
+        }, 500, {}, isFrame);
+      }
     }
     
     // Handle ownership queries
