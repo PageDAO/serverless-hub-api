@@ -9,7 +9,7 @@
         "deploy": "netlify deploy --prod"
     },
     "dependencies": {
-        "@pagedao/core": "^0.2.4",
+        "@pagedao/core": "^0.3.0",
         "rate-limiter-flexible": "^2.4.1"
     },
     "devDependencies": {
