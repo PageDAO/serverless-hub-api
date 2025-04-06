@@ -1,5 +1,5 @@
 const { fetchPagePrices, fetchAllTVL, calculateTVLWeights } = require('@pagedao/core');
-
+const { handleCors } = require('../utils/corsHandler');
 
 // Simple in-memory storage for historical data
 // In a production environment, this would be replaced with a database
@@ -52,6 +52,11 @@ setInterval(async () => {
 }, 10 * 60 * 1000); // Every 10 minutes
 
 exports.handler = async function(event) {
+  // Handle CORS preflight requests
+  if (event.httpMethod === 'OPTIONS') {
+    return handleCors(event);
+  }
+  
   // Initialize data if needed
   await initializeHistoricalData();
   
@@ -112,8 +117,8 @@ exports.handler = async function(event) {
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         'Cache-Control': 'public, max-age=60' // Cache for 60 seconds
       },
       body: JSON.stringify(response)
@@ -126,8 +131,8 @@ exports.handler = async function(event) {
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type'
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
       },
       body: JSON.stringify({
         error: 'Failed to fetch historical data',
