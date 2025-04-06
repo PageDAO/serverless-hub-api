@@ -15,8 +15,8 @@ function createResponse(data, statusCode = 200, extraHeaders = {}, isFrame = fal
     headers: {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Cache-Control': `public, max-age=${cacheDuration}`,
       ...extraHeaders
     },
