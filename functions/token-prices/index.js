@@ -1,7 +1,13 @@
 // functions/token-prices/index.js
 const { fetchPagePrices, fetchAllTVL, calculateTVLWeights } = require('@pagedao/core');
+const { handleCors } = require('../utils/corsHandler');
 
 exports.handler = async function(event) {
+  // Handle CORS preflight requests
+  if (event.httpMethod === 'OPTIONS') {
+    return handleCors(event);
+  }
+  
   try {
     console.log('Token prices API request received');
     
@@ -61,8 +67,8 @@ exports.handler = async function(event) {
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         'Cache-Control': 'public, max-age=60' // Cache for 60 seconds
       },
       body: JSON.stringify(response)
@@ -75,8 +81,8 @@ exports.handler = async function(event) {
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type'
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
       },
       body: JSON.stringify({
         error: 'Failed to fetch token prices',
