@@ -3,8 +3,14 @@ const { rateLimitCheck } = require('../utils/rateLimiter');
 const { createResponse } = require('../utils/responseFormatter');
 const { handleError } = require('../utils/errorHandler');
 const { isFrameRequest, optimizeForFrame } = require('../utils/frameDetection');
+const { handleCors } = require('../utils/corsHandler');
 
 exports.handler = async function(event) {
+  // Handle CORS preflight requests first
+  if (event.httpMethod === 'OPTIONS') {
+    return handleCors(event);
+  }
+  
   try {
     // Check rate limiting
     const rateLimitResponse = await rateLimitCheck(event);
